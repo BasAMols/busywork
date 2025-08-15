@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": true,
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "preserveConstEnums": true,
+    "rootDir": "./ts/",
+    "target": "es2017",
+    "moduleResolution": "node",
+    "noEmit": true
+  },
+  "include": ["./ts", "game.ts"],
+}
