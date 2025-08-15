@@ -1,5 +1,7 @@
 import { HTML } from '../../../../../element/element';
 import { Tile } from '../../../../../element/tile';
+import { Ease } from '../../../../../math/easings';
+import { Utils } from '../../../../../math/util';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../../ticker';
 import { Section } from '../../../../util/section';
@@ -77,6 +79,7 @@ export class Office extends Section {
         
     ];
     chair: Chair;
+    overlay: HTML;
 
     public constructor() {
         super(new Vector2(700, 600), {
@@ -85,7 +88,7 @@ export class Office extends Section {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'width 0.8s ease-in-out',
+            transition: 'width 0.8s ease-in-out, margin-left 0.8s ease-in-out',
         });
 
         const wrap = this.append(new HTML({
@@ -135,12 +138,12 @@ export class Office extends Section {
         }));
 
 
-        wrap.append(this.chair = new Chair(new Vector2(240, 120), -1));
+        wrap.append(this.chair = new Chair(new Vector2(240, 130), -1));
         
         wrap.append(getDesk(new Vector2(140, 15), -1, 1, {
         }));
         
-        this.sitter = new Sitter({ initialPosition: new Vector2(40, 20), hair: 'none' }, this.chair);
+        this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: 'none' }, this.chair);
         wrap.append(this.sitter);
        
         wrap.append(new Chair(new Vector2(480, 200), 120, {
@@ -171,31 +174,55 @@ export class Office extends Section {
         this.npc = new Boss(new Vector2(350, 700), 0, 'half');
         wrap.append(this.npc);
 
-        const overlay = this.append(new HTML({
+        this.overlay = this.append(new HTML({
             style: {
                 width: '100%',
                 height: '100%',
                 cursor: 'pointer',
             }
         }));
-        overlay.dom.addEventListener('mousedown', (e) => {
+        this.overlay.dom.addEventListener('mousedown', (e) => {
             this.mouse = true;
             this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
         });
-        overlay.dom.addEventListener('mouseup', (e) => {
+        this.overlay.dom.addEventListener('mouseup', (e) => {
             this.mouse = false;
         });
-        overlay.dom.addEventListener('mousemove', (e) => {
+        this.overlay.dom.addEventListener('mousemove', (e) => {
             if (this.mouse) {
                 this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
             } else {
                 this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
             }
         });
+        this.tired = 0;
     }
+
+    public _tired: number = 0;
+    public set tired(value: number) {
+        this._tired = Utils.clamp(value, 0, 1);
+        this.overlay.setStyle({
+            boxShadow: `inset 0px 0px 290px ${(Ease.inOutCubic(this._tired)*360) - 180}px  #00000080`,
+        });
+    }
+    public get tired() {
+        return this._tired;
+    }
+
     public tick(obj: TickerReturnData) {
         this.walker.tick(obj);
         this.npc.tick(obj);
         this.sitter.tick(obj);
+        this.tired += obj.interval * 0.000001;
+        if (this.walker.transform.position.y > 500 && this.walker.transform.position.x > 500) {
+            this.tired += obj.interval * -0.001;
+        }
+        this.setStyle({
+            filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.3)*Math.sin(obj.total*0.001 + 0.3)*this.tired)*2}px)`,
+
+        });
+        this.overlay.setStyle({
+            backgroundColor: `rgba(0, 0, 0, ${Math.sin(obj.total*0.0001)*Math.sin(obj.total*0.001)*Ease.inOutCubic(this._tired)*0.3})`,
+        });
     }
 }

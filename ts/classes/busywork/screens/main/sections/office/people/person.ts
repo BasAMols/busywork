@@ -16,8 +16,8 @@ export class Person extends HTML {
                 height: '30px',
             },
             transform: {
-                position: new Vector2(-40, -15),
                 size: new Vector2(80, 30),
+                position: new Vector2(-40, -15),
                 anchor: new Vector2(0.5, 0.5),
             }
         });

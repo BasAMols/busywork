@@ -1,11 +1,12 @@
 import { Vector2 } from '../../../../../../math/vector2';
+import { TickerReturnData } from '../../../../../../ticker';
 import { Office } from '../office';
 import { Walker } from './walker';
 
 export class Player extends Walker {
     public constructor(private office: Office) {
         super({
-            initialPosition: new Vector2(500, 560), initialRotation: -1, hair: 'none', walkspeed: 0.8
+            initialPosition: new Vector2(300, 300), initialRotation: -1, hair: 'none', walkspeed: 1.2
         });
     }
 
@@ -21,5 +22,9 @@ export class Player extends Walker {
             }
         }
         super.setDestination(destination);
+    }
+
+    public tick(obj: TickerReturnData) {
+        super.tick(obj);
     }
 }

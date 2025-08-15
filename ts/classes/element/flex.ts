@@ -22,5 +22,6 @@ export class Flex extends HTML {
             flexWrap: options.flexWrap,
             gap: `${options.gap}px`,
         });
+        this.setStyle(options.style || {});
     }
 }

@@ -29,7 +29,7 @@ export function getBigKeyboard(position: Vector2, rotation: number, onMouseDown:
                 height: '94px',
                 backgroundColor: '#a59c96',
                 borderRadius: '14px',
-                boxShadow: '10px 10px 2px #00000030, inset 28px 28px 28px #00000020',
+                boxShadow: '6px 6px 2px #00000030, inset 28px 28px 28px #00000020',
                 cursor: 'pointer',
                 padding: '0px',
                 border: 'none',
@@ -43,13 +43,17 @@ export function getBigKeyboard(position: Vector2, rotation: number, onMouseDown:
                 fontFamily: 'monospace',
                 
             },
-            text: i.toString(),
+            text: ['#', '$', '&'][i],
             onMouseDown: () => {
                 b.dom.style.boxShadow = '3px 3px 0px #00000040, inset 28px 28px 28px #00000020';
                 onMouseDown(i as 0 | 1 | 2);
             },
             onMouseUp: () => {
-                b.dom.style.boxShadow = '10px 10px 2px #00000030, inset 28px 28px 28px #00000020';
+                b.dom.style.boxShadow = '6px 6px 2px #00000030, inset 28px 28px 28px #00000020';
+                onMouseUp();
+            },
+            onMouseLeave: () => {
+                b.dom.style.boxShadow = '6px 6px 2px #00000030, inset 28px 28px 28px #00000020';
                 onMouseUp();
             },
             transform: {

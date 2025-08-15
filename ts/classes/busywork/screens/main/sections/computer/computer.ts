@@ -1,21 +1,26 @@
 import { HTML } from '../../../../../element/element';
 import { Flex } from '../../../../../element/flex';
+import { Ease } from '../../../../../math/easings';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../../ticker';
+import { TileGame } from '../../../../main';
 import { Section } from '../../../../util/section';
-import { Walker } from '../office/people/walker';
 
 export class Computer extends Section {
     textElement: HTML;
     scanline: HTML;
     cursor: HTML;
     screen: HTML;
-    public constructor(sitter: Walker) {
+    get sitter() {
+        return this.parent.office.sitter
+    };
+    public constructor(private parent: TileGame) {
         super(new Vector2(450, 440), {
             backgroundColor: '#90857f',
             boxShadow: '0px 0px 200px #0000004a',
             transition: 'width 0.6s ease-in-out',
         });
+
 
         this.screen = this.append(new HTML({
             style: {
@@ -35,10 +40,10 @@ export class Computer extends Section {
             },
             onMouseMove: (e) => {
                 this.cursor.transform.setPosition(new Vector2(e.offsetX, e.offsetY));
-                sitter.person.armTwist = [0.5, 2];
+                this.sitter.person.armTwist = [0.5, 2];
             },
             onMouseLeave: () => {
-                sitter.person.armTwist = [0.5, -0.5];
+                this.sitter.person.armTwist = [0.5, -0.5];
                 this.cursor.visible = false;
             }
         }));
@@ -70,12 +75,12 @@ export class Computer extends Section {
                 height: '40px',
                 backgroundColor: '#fff',
                 outline: '1px solid black',
-                filter: 'drop-shadow(3px 6px 6px #000000ff) blur(1px)',
+                filter: 'drop-shadow(3px 6px 6px #000000ff) blur(3px)',
                 pointerEvents: 'none',
             },
             transform: {
                 position: new Vector2(30, 40),
-                scale: new Vector2(0.25, 0.25),
+                scale: new Vector2(0.3, 0.3),
                 rotation: -20,
             }
         }));
@@ -114,12 +119,13 @@ export class Computer extends Section {
         this._code = code;
     }
 
+
     public setTT(text: string) {
         if (!this._code) return;
         if (text.length > this._code.length) return;
         this._text = text;
 
-        this.textElement.setText(text.padEnd(this._code?.length || 4, '_'));
+        this.textElement.setText(text.replaceAll('0', '#').replaceAll('1', '$').replaceAll('2', '&').padEnd(this._code?.length || 4, '_'));
 
         if (this._text.length >= this._code?.length) {
             if (this._text.substring(0, this._code.length) === this._code) {
@@ -155,5 +161,9 @@ export class Computer extends Section {
 
     tick(obj: TickerReturnData) {
         this.scanline.transform.setPosition(new Vector2(0, (obj.total % 4000) / 4000 * 700 - 100));
+
+        this.setStyle({
+            filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.2)*Math.sin(obj.total*0.001 + 0.2)*this.parent.office.tired)*4}px)`,
+        });
     }
 }

@@ -6,9 +6,9 @@
     "forceConsistentCasingInFileNames": true,
     "preserveConstEnums": true,
     "rootDir": "./ts/",
-    "target": "es2017",
+    "target": "es2021",
     "moduleResolution": "node",
     "noEmit": true
   },
-  "include": ["./ts", "game.ts"],
+  "include": ["./ts", "ts/game.ts"],
 }

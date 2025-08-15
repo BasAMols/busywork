@@ -1,4 +1,4 @@
-import { Busywork } from '../../../../game';
+import { Busywork } from '../../../game';
 import { Button } from '../../element/button';
 import { Flex } from '../../element/flex';
 import { Label } from '../../element/label';

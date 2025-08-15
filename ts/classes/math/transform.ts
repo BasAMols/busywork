@@ -23,6 +23,9 @@ export class Transform {
         this._parent = parent;
         this._update();
     }
+    hasParent() {
+        return this._parent !== undefined;
+    }
 
     public constructor(options: TransformOptions = {}) {
         this._position = options.position ?? new Vector2(0, 0);
@@ -72,26 +75,55 @@ export class Transform {
         // Calculate the local transformation matrix with proper anchor handling
         const localMatrix = this.getLocalMatrix();
 
-        // If we have a parent, multiply with parent's absolute matrix
+        // If we have a parent, we need to transform our logical values through the parent hierarchy
         if (this._parent) {
             const parentAbsolute = this._parent.getAbsolutePosition();
             const absoluteMatrix = this.multiplyMatrices(parentAbsolute.matrix, localMatrix);
 
+            // Calculate absolute values by combining with parent
+            const absolutePosition = this.transformPointThroughParent(this._position, parentAbsolute);
+            const absoluteScale = new Vector2(
+                this._scale.x * parentAbsolute.scale.x,
+                this._scale.y * parentAbsolute.scale.y
+            );
+            const absoluteRotation = (this._rotation + parentAbsolute.rotation) % 360;
+
             return {
-                position: this.extractPositionFromMatrix(absoluteMatrix),
-                scale: this.extractScaleFromMatrix(absoluteMatrix),
-                rotation: this.extractRotationFromMatrix(absoluteMatrix),
+                position: absolutePosition,
+                scale: absoluteScale,
+                rotation: absoluteRotation,
                 matrix: absoluteMatrix
             };
         }
 
-        // No parent, so local matrix is the absolute matrix
+        // No parent, so absolute values are just our local values
         return {
-            position: this.extractPositionFromMatrix(localMatrix),
-            scale: this.extractScaleFromMatrix(localMatrix),
-            rotation: this.extractRotationFromMatrix(localMatrix),
+            position: this._position.clone(),
+            scale: this._scale.clone(),
+            rotation: this._rotation,
             matrix: localMatrix
         };
+    }
+
+    private transformPointThroughParent(point: Vector2, parentAbsolute: { position: Vector2; scale: Vector2; rotation: number }): Vector2 {
+        // Apply parent's scale and rotation to the point, then add parent's position
+        const radians = parentAbsolute.rotation * (Math.PI / 180);
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        
+        // Scale first
+        const scaledX = point.x * parentAbsolute.scale.x;
+        const scaledY = point.y * parentAbsolute.scale.y;
+        
+        // Then rotate
+        const rotatedX = scaledX * cos - scaledY * sin;
+        const rotatedY = scaledX * sin + scaledY * cos;
+        
+        // Finally translate by parent's position
+        return new Vector2(
+            rotatedX + parentAbsolute.position.x,
+            rotatedY + parentAbsolute.position.y
+        );
     }
 
     private getLocalMatrix(): number[] {
@@ -142,31 +174,6 @@ export class Transform {
         return result;
     }
 
-    private extractPositionFromMatrix(matrix: number[]): Vector2 {
-        // Position is stored in the last column (indices 12, 13)
-        return new Vector2(matrix[12], matrix[13]);
-    }
-
-    private extractScaleFromMatrix(matrix: number[]): Vector2 {
-        // Extract scale from the transformation matrix
-        // Scale is the length of the first two column vectors
-        const scaleX = Math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]);
-        const scaleY = Math.sqrt(matrix[4] * matrix[4] + matrix[5] * matrix[5]);
-        return new Vector2(scaleX, scaleY);
-    }
-
-    private extractRotationFromMatrix(matrix: number[]): number {
-        // Extract rotation from the transformation matrix
-        // Use the first column vector to determine rotation
-        const scaleX = Math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]);
-        const normalizedX = matrix[0] / scaleX;
-        const normalizedY = matrix[1] / scaleX;
-
-        // Calculate angle in radians, then convert to degrees
-        const radiansRotation = Math.atan2(normalizedY, normalizedX);
-        return (radiansRotation * 180 / Math.PI) % 360;
-    }
-
     public get absolute(): {
         position: Vector2;
         scale: Vector2;
@@ -212,6 +219,49 @@ export class Transform {
         this._responders.forEach(responder => {
             responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix });
         });
+    }
+
+    public setMatrix(matrix: number[]) {
+        if (matrix.length !== 16) {
+            throw new Error('Matrix must be a 16-element array representing a 4x4 matrix');
+        }
+
+        // Extract components from the 4x4 matrix (column-major order)
+        const a = matrix[0];  // scale_x * cos(rotation)
+        const b = matrix[1];  // scale_x * sin(rotation)
+        const c = matrix[4];  // -scale_y * sin(rotation)
+        const d = matrix[5];  // scale_y * cos(rotation)
+        const tx = matrix[12]; // translation x
+        const ty = matrix[13]; // translation y
+
+        // Decompose scale
+        const scaleX = Math.sqrt(a * a + b * b);
+        const scaleY = Math.sqrt(c * c + d * d);
+
+        // Decompose rotation (in radians, then convert to degrees)
+        const rotation = Math.atan2(b, a) * (180 / Math.PI);
+
+        // Calculate position considering anchor point
+        // Since the matrix includes anchor transformations, we need to reverse them
+        const anchorX = this._anchor.x * this._size.x;
+        const anchorY = this._anchor.y * this._size.y;
+        
+        // The matrix equation is: translate(pos + anchor) * rotate * scale * translate(-anchor)
+        // So: tx = pos_x + anchor_x - (a * anchor_x + c * anchor_y)
+        // Therefore: pos_x = tx - anchor_x + (a * anchor_x + c * anchor_y)
+        const positionX = tx - anchorX + (a * anchorX + c * anchorY);
+        const positionY = ty - anchorY + (b * anchorX + d * anchorY);
+
+        // Update transform properties
+        this._position = new Vector2(positionX, positionY);
+        this._scale = new Vector2(scaleX, scaleY);
+        this._rotation = rotation;
+        
+        this._update();
+    }
+
+    update() {
+        this._update();
     }
 
 }

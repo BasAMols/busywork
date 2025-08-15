@@ -1,6 +1,6 @@
-import { Game as Base } from "./ts/base";
-import { TileGame } from './ts/classes/busywork/main';
-import { Menu } from './ts/classes/busywork/screens/menu';
+import { Game as Base } from "./base";
+import { TileGame } from './classes/busywork/main';
+import { Menu } from './classes/busywork/screens/menu';
 
 export class Busywork extends Base {
     private _menu: Menu;

@@ -2,21 +2,19 @@ import { HTML } from '../element/element';
 import { Flex } from '../element/flex';
 import { Screen } from "../element/screen";
 import { TickerReturnData } from '../ticker';
-import { Busywork } from '../../../game';
+import { Busywork } from '../../game';
 import { Computer } from './screens/main/sections/computer/computer';
 import { Keyboard } from './screens/main/sections/keyboard/keyboard';
 import { Office } from './screens/main/sections/office/office';
 import { Vector2 } from '../math/vector2';
+import { StatBar } from './screens/main/sections/stat/statbar';
 
 
 export class TileGame extends Screen {
-    private office: Office;
-    private computer: Computer;
-    private keyboard: Keyboard;
+    public office: Office;
+    public computer: Computer;
+    public keyboard: Keyboard;
 
-    private states = {
-        'atdesk': false,
-    };
     private stateData: {
         [key: string]: {
             value: boolean;
@@ -26,6 +24,7 @@ export class TileGame extends Screen {
     } = {
 
         };
+    statBar: StatBar;
 
     addState(state: string, initial: boolean, condition?: () => boolean, onChange?: (value: boolean) => void) {
         this.stateData[state] = {
@@ -34,6 +33,10 @@ export class TileGame extends Screen {
             onChange: onChange,
         };
         this.stateData[state].onChange?.(initial);
+    }
+
+    public state(state: string) {
+        return this.stateData[state]?.value;
     }
 
     computerCol: HTML;
@@ -71,14 +74,16 @@ export class TileGame extends Screen {
     public constructor(private game: Busywork) {
         super('test');
 
-        const row = this.append(this.getRow(true, true));
+        const col = this.append(this.getCol(true, true));
+        const row = col.append(this.getRow(false,false));
         row.append(this.office = new Office(), true);
+        col.append(this.statBar = new StatBar(this));
 
         this.computerCol = row.append(this.getCol(false, false, {
             transition: 'width 0.8s ease-in-out',
         }));
-        this.computerCol.append(this.computer = new Computer(this.office.sitter));
-        this.computerCol.append(this.keyboard = new Keyboard(this.computer, this.office.sitter));
+        this.computerCol.append(this.computer = new Computer(this));
+        this.computerCol.append(this.keyboard = new Keyboard(this));
 
         this.addState('atdesk', false,
             () => {
@@ -87,30 +92,26 @@ export class TileGame extends Screen {
             },
             (value) => {
                 this.computerCol.dom.style.width = value ? '450px' : '0px';
+                this.computerCol.dom.style.marginLeft = value ? '0' : '-20px';
                 this.office.dom.style.width = value ? '500px' : '700px';
-                
+                this.statBar.dom.style.width = value ? '500px' : '700px';
+                this.office.sitter.seated = value;
                 this.office.walker.visible = !value;
-                this.office.sitter.visible = value;
-                this.office.chair.seat.transform.setRotation(value ? -1 : 120);
-                this.office.chair.setPosition(value ? new Vector2(240, 120) : new Vector2(240, 140));
-
                 if (value) {
                     this.office.walker.setDestination(undefined);
-                    this.office.walker.transform.setPosition(new Vector2(280, 165));
+                    this.office.walker.transform.setPosition(new Vector2(280, 160));
                 }
             });
         this.addState('bossinroom', false,
             () => {
                 return this.office.npc.time > 1500 && this.office.npc.time < 27000;
             }, (value) => {
-                console.log('bossinroom', value);
             }
         );
         this.addState('bosslooking', false,
             () => {
                 return this.office.npc.time > 21000 && this.office.npc.time < 24000;
             }, (value) => {
-                console.log('bosslooking', value);
             });
     }
 
@@ -131,6 +132,7 @@ export class TileGame extends Screen {
         this.office.tick(obj);
         this.computer.tick(obj);
         this.keyboard.tick(obj);
+        this.statBar.tick(obj);
         this.syncStates();
     }
 

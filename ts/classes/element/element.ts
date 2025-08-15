@@ -13,6 +13,7 @@ export interface HTMLOptions {
     onMouseMove?: (e: MouseEvent) => void;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
+    children?: HTML[];
 }
 
 export class HTML {
@@ -20,6 +21,7 @@ export class HTML {
     public readonly options: HTMLOptions;
     public readonly dom: HTMLElement;
     public readonly transform: Transform;
+    public children: HTML[] = [];
     public constructor(options: HTMLOptions = {}) {
         this.options = options;
         this.type = this.options.type || 'div';
@@ -72,13 +74,20 @@ export class HTML {
             });
         }
         this.setText(this.options.text);
+
+        if (options.children) {
+            options.children.forEach(child => {
+                this.append(child);
+            });
+        }
     }
 
     public append(element: HTML, absolute: boolean = false): HTML {
         this.dom.appendChild(element.dom);
-        if (!absolute) {
+        if (!element.transform.hasParent() && !absolute) {
             element.transform.setParent(this.transform);
         }
+        this.children.push(element);
         return element;
     }
 

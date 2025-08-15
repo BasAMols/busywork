@@ -1,5 +1,4 @@
-
-import { Busywork } from '../game';
+import { Busywork } from './game';
 
 document.addEventListener("DOMContentLoaded", async () => {
 

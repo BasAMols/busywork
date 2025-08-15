@@ -17,6 +17,8 @@ export class Walker extends HTML {
                 size: new Vector2(0, 0),
             },
             style: {
+                width: '80px',
+                height: '30px',
             }
         });
 

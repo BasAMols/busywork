@@ -44,7 +44,6 @@ export function getDesk(position: Vector2, rotation: number, screens: 1 | 2 = 1,
 
 export class Chair extends HTML {
     seat: HTML;
-
     setRotation(rotation: number) {
         if (this.seat.transform.rotation !== rotation) {
             // this.seat.transform.setRotation(rotation);
@@ -64,7 +63,7 @@ export class Chair extends HTML {
             style: {
                 width: '80px',
                 height: '80px',
-                // transition: 'transform 0.8s ease-in-out',
+                transition: 'transform 0.8s ease-in-out',
                 ...style,
             },
             transform: {
@@ -101,14 +100,13 @@ export class Chair extends HTML {
                 backgroundColor: '#646464',
                 filter: 'drop-shadow(3px 4px 5px #00000040)',
                 borderRadius: '10px',
-                transition: 'rotate 0.8s ease-in-out, left 0.8s ease-in-out, top 0.8s ease-in-out',
+                transition: 'transform 0.8s ease-in-out, left 0.8s ease-in-out, top 0.8s ease-in-out',
             },
             transform: {
                 position: new Vector2(5, 0),
                 anchor: new Vector2(0.5, 0.5),
                 size: new Vector2(70, 80),  
             }
-
         }));
 
         this.seat.append(new HTML({

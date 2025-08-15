@@ -115,6 +115,9 @@ var Transform = class {
     this._parent = parent;
     this._update();
   }
+  hasParent() {
+    return this._parent !== void 0;
+  }
   setResponder(responder) {
     this._responders.push(responder);
     responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix });
@@ -143,19 +146,38 @@ var Transform = class {
     if (this._parent) {
       const parentAbsolute = this._parent.getAbsolutePosition();
       const absoluteMatrix = this.multiplyMatrices(parentAbsolute.matrix, localMatrix);
+      const absolutePosition = this.transformPointThroughParent(this._position, parentAbsolute);
+      const absoluteScale = new Vector2(
+        this._scale.x * parentAbsolute.scale.x,
+        this._scale.y * parentAbsolute.scale.y
+      );
+      const absoluteRotation = (this._rotation + parentAbsolute.rotation) % 360;
       return {
-        position: this.extractPositionFromMatrix(absoluteMatrix),
-        scale: this.extractScaleFromMatrix(absoluteMatrix),
-        rotation: this.extractRotationFromMatrix(absoluteMatrix),
+        position: absolutePosition,
+        scale: absoluteScale,
+        rotation: absoluteRotation,
         matrix: absoluteMatrix
       };
     }
     return {
-      position: this.extractPositionFromMatrix(localMatrix),
-      scale: this.extractScaleFromMatrix(localMatrix),
-      rotation: this.extractRotationFromMatrix(localMatrix),
+      position: this._position.clone(),
+      scale: this._scale.clone(),
+      rotation: this._rotation,
       matrix: localMatrix
     };
+  }
+  transformPointThroughParent(point, parentAbsolute) {
+    const radians = parentAbsolute.rotation * (Math.PI / 180);
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const scaledX = point.x * parentAbsolute.scale.x;
+    const scaledY = point.y * parentAbsolute.scale.y;
+    const rotatedX = scaledX * cos - scaledY * sin;
+    const rotatedY = scaledX * sin + scaledY * cos;
+    return new Vector2(
+      rotatedX + parentAbsolute.position.x,
+      rotatedY + parentAbsolute.position.y
+    );
   }
   getLocalMatrix() {
     const radiansRotation = this._rotation * (Math.PI / 180);
@@ -199,21 +221,6 @@ var Transform = class {
     }
     return result;
   }
-  extractPositionFromMatrix(matrix) {
-    return new Vector2(matrix[12], matrix[13]);
-  }
-  extractScaleFromMatrix(matrix) {
-    const scaleX = Math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]);
-    const scaleY = Math.sqrt(matrix[4] * matrix[4] + matrix[5] * matrix[5]);
-    return new Vector2(scaleX, scaleY);
-  }
-  extractRotationFromMatrix(matrix) {
-    const scaleX = Math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]);
-    const normalizedX = matrix[0] / scaleX;
-    const normalizedY = matrix[1] / scaleX;
-    const radiansRotation = Math.atan2(normalizedY, normalizedX);
-    return radiansRotation * 180 / Math.PI % 360;
-  }
   get absolute() {
     return this.getAbsolutePosition();
   }
@@ -245,11 +252,37 @@ var Transform = class {
       responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix });
     });
   }
+  setMatrix(matrix) {
+    if (matrix.length !== 16) {
+      throw new Error("Matrix must be a 16-element array representing a 4x4 matrix");
+    }
+    const a = matrix[0];
+    const b = matrix[1];
+    const c = matrix[4];
+    const d = matrix[5];
+    const tx = matrix[12];
+    const ty = matrix[13];
+    const scaleX = Math.sqrt(a * a + b * b);
+    const scaleY = Math.sqrt(c * c + d * d);
+    const rotation = Math.atan2(b, a) * (180 / Math.PI);
+    const anchorX = this._anchor.x * this._size.x;
+    const anchorY = this._anchor.y * this._size.y;
+    const positionX = tx - anchorX + (a * anchorX + c * anchorY);
+    const positionY = ty - anchorY + (b * anchorX + d * anchorY);
+    this._position = new Vector2(positionX, positionY);
+    this._scale = new Vector2(scaleX, scaleY);
+    this._rotation = rotation;
+    this._update();
+  }
+  update() {
+    this._update();
+  }
 };
 
 // ts/classes/element/element.ts
 var HTML = class {
   constructor(options = {}) {
+    this.children = [];
     this._visible = true;
     this.options = options;
     this.type = this.options.type || "div";
@@ -300,12 +333,18 @@ var HTML = class {
       });
     }
     this.setText(this.options.text);
+    if (options.children) {
+      options.children.forEach((child) => {
+        this.append(child);
+      });
+    }
   }
   append(element, absolute = false) {
     this.dom.appendChild(element.dom);
-    if (!absolute) {
+    if (!element.transform.hasParent() && !absolute) {
       element.transform.setParent(this.transform);
     }
+    this.children.push(element);
     return element;
   }
   remove() {
@@ -455,6 +494,7 @@ var Flex = class extends HTML {
       flexWrap: options.flexWrap,
       gap: "".concat(options.gap, "px")
     });
+    this.setStyle(options.style || {});
   }
 };
 
@@ -465,6 +505,75 @@ var Screen = class extends HTML {
     this.key = key;
   }
   tick(obj) {
+  }
+};
+
+// ts/classes/math/easings.ts
+var Ease = {
+  // No easing, no acceleration
+  linear: (t) => t,
+  // Accelerates fast, then slows quickly towards end.
+  quadratic: (t) => t * (-(t * t) * t + 4 * t * t - 6 * t + 4),
+  // Overshoots over 1 and then returns to 1 towards end.
+  cubic: (t) => t * (4 * t * t - 9 * t + 6),
+  // Overshoots over 1 multiple times - wiggles around 1.
+  elastic: (t) => t * (33 * t * t * t * t - 106 * t * t * t + 126 * t * t - 67 * t + 15),
+  // Accelerating from zero velocity
+  inQuad: (t) => t * t,
+  // Decelerating to zero velocity
+  outQuad: (t) => t * (2 - t),
+  // Acceleration until halfway, then deceleration
+  inOutQuad: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+  // Accelerating from zero velocity
+  inCubic: (t) => t * t * t,
+  // Decelerating to zero velocity
+  outCubic: (t) => --t * t * t + 1,
+  // Acceleration until halfway, then deceleration
+  inOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+  // Accelerating from zero velocity
+  inQuart: (t) => t * t * t * t,
+  // Decelerating to zero velocity
+  outQuart: (t) => 1 - --t * t * t * t,
+  // Acceleration until halfway, then deceleration
+  inOutQuart: (t) => t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t,
+  // Accelerating from zero velocity
+  inQuint: (t) => t * t * t * t * t,
+  // Decelerating to zero velocity
+  outQuint: (t) => 1 + --t * t * t * t * t,
+  // Acceleration until halfway, then deceleration
+  inOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
+  // Accelerating from zero velocity
+  inSine: (t) => -Math.cos(t * (Math.PI / 2)) + 1,
+  // Decelerating to zero velocity
+  outSine: (t) => Math.sin(t * (Math.PI / 2)),
+  // Accelerating until halfway, then decelerating
+  inOutSine: (t) => -(Math.cos(Math.PI * t) - 1) / 2,
+  // Exponential accelerating from zero velocity
+  inExpo: (t) => Math.pow(2, 10 * (t - 1)),
+  // Exponential decelerating to zero velocity
+  outExpo: (t) => -Math.pow(2, -10 * t) + 1,
+  // Exponential accelerating until halfway, then decelerating
+  inOutExpo: (t) => {
+    t /= 0.5;
+    if (t < 1)
+      return Math.pow(2, 10 * (t - 1)) / 2;
+    t--;
+    return (-Math.pow(2, -10 * t) + 2) / 2;
+  },
+  // Circular accelerating from zero velocity
+  inCirc: (t) => -Math.sqrt(1 - t * t) + 1,
+  // Circular decelerating to zero velocity Moves VERY fast at the beginning and
+  // then quickly slows down in the middle. This tween can actually be used
+  // in continuous transitions where target value changes all the time,
+  // because of the very quick start, it hides the jitter between target value changes.
+  outCirc: (t) => Math.sqrt(1 - (t = t - 1) * t),
+  // Circular acceleration until halfway, then deceleration
+  inOutCirc: (t) => {
+    t /= 0.5;
+    if (t < 1)
+      return -(Math.sqrt(1 - t * t) - 1) / 2;
+    t -= 2;
+    return (Math.sqrt(1 - t * t) + 1) / 2;
   }
 };
 
@@ -488,12 +597,13 @@ var Section = class extends HTML {
 
 // ts/classes/busywork/screens/main/sections/computer/computer.ts
 var Computer = class extends Section {
-  constructor(sitter) {
+  constructor(parent) {
     super(new Vector2(450, 440), {
       backgroundColor: "#90857f",
       boxShadow: "0px 0px 200px #0000004a",
       transition: "width 0.6s ease-in-out"
     });
+    this.parent = parent;
     this._text = "";
     this._code = void 0;
     this.screen = this.append(new HTML({
@@ -514,10 +624,10 @@ var Computer = class extends Section {
       },
       onMouseMove: (e) => {
         this.cursor.transform.setPosition(new Vector2(e.offsetX, e.offsetY));
-        sitter.person.armTwist = [0.5, 2];
+        this.sitter.person.armTwist = [0.5, 2];
       },
       onMouseLeave: () => {
-        sitter.person.armTwist = [0.5, -0.5];
+        this.sitter.person.armTwist = [0.5, -0.5];
         this.cursor.visible = false;
       }
     }));
@@ -547,12 +657,12 @@ var Computer = class extends Section {
         height: "40px",
         backgroundColor: "#fff",
         outline: "1px solid black",
-        filter: "drop-shadow(3px 6px 6px #000000ff) blur(1px)",
+        filter: "drop-shadow(3px 6px 6px #000000ff) blur(3px)",
         pointerEvents: "none"
       },
       transform: {
         position: new Vector2(30, 40),
-        scale: new Vector2(0.25, 0.25),
+        scale: new Vector2(0.3, 0.3),
         rotation: -20
       }
     }));
@@ -581,6 +691,9 @@ var Computer = class extends Section {
     this.setCode("0121");
     this.setTT("");
   }
+  get sitter() {
+    return this.parent.office.sitter;
+  }
   setCode(code) {
     this._code = code;
   }
@@ -591,7 +704,7 @@ var Computer = class extends Section {
     if (text.length > this._code.length)
       return;
     this._text = text;
-    this.textElement.setText(text.padEnd(((_a = this._code) == null ? void 0 : _a.length) || 4, "_"));
+    this.textElement.setText(text.replaceAll("0", "#").replaceAll("1", "$").replaceAll("2", "&").padEnd(((_a = this._code) == null ? void 0 : _a.length) || 4, "_"));
     if (this._text.length >= ((_b = this._code) == null ? void 0 : _b.length)) {
       if (this._text.substring(0, this._code.length) === this._code) {
         this.screen.setStyle({
@@ -622,6 +735,9 @@ var Computer = class extends Section {
   }
   tick(obj) {
     this.scanline.transform.setPosition(new Vector2(0, obj.total % 4e3 / 4e3 * 700 - 100));
+    this.setStyle({
+      filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
+    });
   }
 };
 
@@ -659,7 +775,7 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
         height: "94px",
         backgroundColor: "#a59c96",
         borderRadius: "14px",
-        boxShadow: "10px 10px 2px #00000030, inset 28px 28px 28px #00000020",
+        boxShadow: "6px 6px 2px #00000030, inset 28px 28px 28px #00000020",
         cursor: "pointer",
         padding: "0px",
         border: "none",
@@ -672,13 +788,17 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
         color: "#776b6bcc",
         fontFamily: "monospace"
       },
-      text: i.toString(),
+      text: ["#", "$", "&"][i],
       onMouseDown: () => {
         b.dom.style.boxShadow = "3px 3px 0px #00000040, inset 28px 28px 28px #00000020";
         onMouseDown(i);
       },
       onMouseUp: () => {
-        b.dom.style.boxShadow = "10px 10px 2px #00000030, inset 28px 28px 28px #00000020";
+        b.dom.style.boxShadow = "6px 6px 2px #00000030, inset 28px 28px 28px #00000020";
+        onMouseUp();
+      },
+      onMouseLeave: () => {
+        b.dom.style.boxShadow = "6px 6px 2px #00000030, inset 28px 28px 28px #00000020";
         onMouseUp();
       },
       transform: {
@@ -693,20 +813,32 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
 
 // ts/classes/busywork/screens/main/sections/keyboard/keyboard.ts
 var Keyboard = class extends Section {
-  constructor(computer, sitter) {
+  constructor(parent) {
     super(new Vector2(450, 140), {});
+    this.parent = parent;
     this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
-      computer.addTT(key.toString());
+      this.computer.addTT(key.toString());
       if (key === 0) {
-        sitter.person.armTwist = [0.2, -0.5];
+        this.sitter.person.armTwist = [0.2, -0.5];
       } else if (key === 1) {
-        sitter.person.armTwist = [1, -0.5];
+        this.sitter.person.armTwist = [1, -0.5];
       } else if (key === 2) {
-        sitter.person.armTwist = [0.5, -0.8];
+        this.sitter.person.armTwist = [0.5, -0.8];
       }
     }, () => {
-      sitter.person.armTwist = [0.5, -0.5];
+      this.sitter.person.armTwist = [0.5, -0.5];
     }));
+  }
+  get sitter() {
+    return this.parent.office.sitter;
+  }
+  get computer() {
+    return this.parent.computer;
+  }
+  tick(obj) {
+    this.setStyle({
+      filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
+    });
   }
 };
 
@@ -745,6 +877,17 @@ var Tile = class extends HTML {
           })
         })));
       }
+    }
+  }
+};
+
+// ts/classes/math/util.ts
+var Utils = class {
+  static clamp(value, min, max) {
+    if (typeof value === "number" && typeof min === "number" && typeof max === "number") {
+      return Math.max(min, Math.min(value, max));
+    } else if (value instanceof Vector2 && min instanceof Vector2 && max instanceof Vector2) {
+      return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
     }
   }
 };
@@ -1029,7 +1172,8 @@ var Chair = class extends HTML {
     super({
       style: __spreadValues({
         width: "80px",
-        height: "80px"
+        height: "80px",
+        transition: "transform 0.8s ease-in-out"
       }, style),
       transform: {
         position,
@@ -1062,7 +1206,7 @@ var Chair = class extends HTML {
         backgroundColor: "#646464",
         filter: "drop-shadow(3px 4px 5px #00000040)",
         borderRadius: "10px",
-        transition: "rotate 0.8s ease-in-out, left 0.8s ease-in-out, top 0.8s ease-in-out"
+        transition: "transform 0.8s ease-in-out, left 0.8s ease-in-out, top 0.8s ease-in-out"
       },
       transform: {
         position: new Vector2(5, 0),
@@ -1087,86 +1231,6 @@ var Chair = class extends HTML {
   }
 };
 
-// ts/classes/math/util.ts
-var Utils = class {
-  static clamp(value, min, max) {
-    if (typeof value === "number" && typeof min === "number" && typeof max === "number") {
-      return Math.max(min, Math.min(value, max));
-    } else if (value instanceof Vector2 && min instanceof Vector2 && max instanceof Vector2) {
-      return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
-    }
-  }
-};
-
-// ts/classes/math/easings.ts
-var Ease = {
-  // No easing, no acceleration
-  linear: (t) => t,
-  // Accelerates fast, then slows quickly towards end.
-  quadratic: (t) => t * (-(t * t) * t + 4 * t * t - 6 * t + 4),
-  // Overshoots over 1 and then returns to 1 towards end.
-  cubic: (t) => t * (4 * t * t - 9 * t + 6),
-  // Overshoots over 1 multiple times - wiggles around 1.
-  elastic: (t) => t * (33 * t * t * t * t - 106 * t * t * t + 126 * t * t - 67 * t + 15),
-  // Accelerating from zero velocity
-  inQuad: (t) => t * t,
-  // Decelerating to zero velocity
-  outQuad: (t) => t * (2 - t),
-  // Acceleration until halfway, then deceleration
-  inOutQuad: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-  // Accelerating from zero velocity
-  inCubic: (t) => t * t * t,
-  // Decelerating to zero velocity
-  outCubic: (t) => --t * t * t + 1,
-  // Acceleration until halfway, then deceleration
-  inOutCubic: (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
-  // Accelerating from zero velocity
-  inQuart: (t) => t * t * t * t,
-  // Decelerating to zero velocity
-  outQuart: (t) => 1 - --t * t * t * t,
-  // Acceleration until halfway, then deceleration
-  inOutQuart: (t) => t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t,
-  // Accelerating from zero velocity
-  inQuint: (t) => t * t * t * t * t,
-  // Decelerating to zero velocity
-  outQuint: (t) => 1 + --t * t * t * t * t,
-  // Acceleration until halfway, then deceleration
-  inOutQuint: (t) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t,
-  // Accelerating from zero velocity
-  inSine: (t) => -Math.cos(t * (Math.PI / 2)) + 1,
-  // Decelerating to zero velocity
-  outSine: (t) => Math.sin(t * (Math.PI / 2)),
-  // Accelerating until halfway, then decelerating
-  inOutSine: (t) => -(Math.cos(Math.PI * t) - 1) / 2,
-  // Exponential accelerating from zero velocity
-  inExpo: (t) => Math.pow(2, 10 * (t - 1)),
-  // Exponential decelerating to zero velocity
-  outExpo: (t) => -Math.pow(2, -10 * t) + 1,
-  // Exponential accelerating until halfway, then decelerating
-  inOutExpo: (t) => {
-    t /= 0.5;
-    if (t < 1)
-      return Math.pow(2, 10 * (t - 1)) / 2;
-    t--;
-    return (-Math.pow(2, -10 * t) + 2) / 2;
-  },
-  // Circular accelerating from zero velocity
-  inCirc: (t) => -Math.sqrt(1 - t * t) + 1,
-  // Circular decelerating to zero velocity Moves VERY fast at the beginning and
-  // then quickly slows down in the middle. This tween can actually be used
-  // in continuous transitions where target value changes all the time,
-  // because of the very quick start, it hides the jitter between target value changes.
-  outCirc: (t) => Math.sqrt(1 - (t = t - 1) * t),
-  // Circular acceleration until halfway, then deceleration
-  inOutCirc: (t) => {
-    t /= 0.5;
-    if (t < 1)
-      return -(Math.sqrt(1 - t * t) - 1) / 2;
-    t -= 2;
-    return (Math.sqrt(1 - t * t) + 1) / 2;
-  }
-};
-
 // ts/classes/busywork/screens/main/sections/office/people/person.ts
 var Person = class extends HTML {
   constructor(hair = "full") {
@@ -1176,8 +1240,8 @@ var Person = class extends HTML {
         height: "30px"
       },
       transform: {
-        position: new Vector2(-40, -15),
         size: new Vector2(80, 30),
+        position: new Vector2(-40, -15),
         anchor: new Vector2(0.5, 0.5)
       }
     });
@@ -1322,7 +1386,10 @@ var Walker = class extends HTML {
         anchor: new Vector2(0.5, 0.5),
         size: new Vector2(0, 0)
       },
-      style: {}
+      style: {
+        width: "80px",
+        height: "30px"
+      }
     });
     this.append(this.person = new Person(hair));
     this.person.armPosition = [0, 0];
@@ -1407,10 +1474,10 @@ var Boss = class extends Walker {
 var Player = class extends Walker {
   constructor(office) {
     super({
-      initialPosition: new Vector2(500, 560),
+      initialPosition: new Vector2(300, 300),
       initialRotation: -1,
       hair: "none",
-      walkspeed: 0.8
+      walkspeed: 1.2
     });
     this.office = office;
   }
@@ -1423,6 +1490,9 @@ var Player = class extends Walker {
     }
     super.setDestination(destination);
   }
+  tick(obj) {
+    super.tick(obj);
+  }
 };
 
 // ts/classes/busywork/screens/main/sections/office/people/sitter.ts
@@ -1433,26 +1503,43 @@ var Sitter = class extends Walker {
       walkspeed: obj.walkspeed
     });
     this.chair = chair;
+    this._seated = false;
+    this.interpolatedValue = 0;
     this.data = {
       initialPosition: obj.initialPosition || new Vector2(0, 0),
       initialRotation: obj.initialRotation || 0
     };
+    this.transform.setParent(this.chair.seat.transform);
     this.person.legCycle = 0.5;
     this.person.armPosition = [1, 1];
     this.person.armTwist = [0.5, -0.5];
     this.person.arms[0].setStyle({
-      transition: "transform 0.1s ease-in-out"
+      // transition: 'transform 0.1s ease-in-out',
     });
     this.person.arms[1].setStyle({
-      transition: "transform 0.1s ease-in-out"
+      // transition: 'transform 0.1s ease-in-out',
     });
     this.setStyle({
       transition: "transform 0.8s ease-in-out"
     });
   }
+  set seated(seated) {
+    this._seated = seated;
+    this.visible = seated;
+    this.chair.seat.transform.setRotation(seated ? -1 : 70);
+    this.chair.setPosition(seated ? new Vector2(240, 130) : new Vector2(240, 140));
+  }
+  get seated() {
+    return this._seated;
+  }
   tick(obj) {
     super.tick(obj);
-    console.log(this.chair.seat.transform.absolute.position);
+    this.interpolatedValue = this.interpolatedValue + Math.min(0.02, Number(this.seated) - this.interpolatedValue);
+    this.person.armPosition = [this.interpolatedValue, this.interpolatedValue];
+    this.person.arms[0].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
+    this.person.arms[1].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
+    this.chair.seat.transform.setRotation(this.seated ? -1 : 70);
+    this.chair.setPosition(this.seated ? new Vector2(240, 130) : new Vector2(240, 140));
     this.transform.setPosition(this.chair.seat.transform.absolute.position.add(this.data.initialPosition));
     this.transform.setRotation(this.chair.seat.transform.absolute.rotation + this.data.initialRotation);
   }
@@ -1467,7 +1554,7 @@ var Office = class extends Section {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      transition: "width 0.8s ease-in-out"
+      transition: "width 0.8s ease-in-out, margin-left 0.8s ease-in-out"
     });
     this.mouse = false;
     this.blockers = [
@@ -1524,6 +1611,7 @@ var Office = class extends Section {
         size: new Vector2(80, 80)
       }
     ];
+    this._tired = 0;
     const wrap = this.append(new HTML({
       style: {
         width: "700px",
@@ -1567,9 +1655,9 @@ var Office = class extends Section {
         }
       }
     }));
-    wrap.append(this.chair = new Chair(new Vector2(240, 120), -1));
+    wrap.append(this.chair = new Chair(new Vector2(240, 130), -1));
     wrap.append(getDesk(new Vector2(140, 15), -1, 1, {}));
-    this.sitter = new Sitter({ initialPosition: new Vector2(40, 20), hair: "none" }, this.chair);
+    this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: "none" }, this.chair);
     wrap.append(this.sitter);
     wrap.append(new Chair(new Vector2(480, 200), 120, {
       filter: "saturate(0.4)"
@@ -1590,32 +1678,156 @@ var Office = class extends Section {
     wrap.append(getPlant(new Vector2(590, 490), 40, 9, 40));
     this.npc = new Boss(new Vector2(350, 700), 0, "half");
     wrap.append(this.npc);
-    const overlay = this.append(new HTML({
+    this.overlay = this.append(new HTML({
       style: {
         width: "100%",
         height: "100%",
         cursor: "pointer"
       }
     }));
-    overlay.dom.addEventListener("mousedown", (e) => {
+    this.overlay.dom.addEventListener("mousedown", (e) => {
       this.mouse = true;
       this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
     });
-    overlay.dom.addEventListener("mouseup", (e) => {
+    this.overlay.dom.addEventListener("mouseup", (e) => {
       this.mouse = false;
     });
-    overlay.dom.addEventListener("mousemove", (e) => {
+    this.overlay.dom.addEventListener("mousemove", (e) => {
       if (this.mouse) {
         this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
       } else {
         this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
       }
     });
+    this.tired = 0;
+  }
+  set tired(value) {
+    this._tired = Utils.clamp(value, 0, 1);
+    this.overlay.setStyle({
+      boxShadow: "inset 0px 0px 290px ".concat(Ease.inOutCubic(this._tired) * 360 - 180, "px  #00000080")
+    });
+  }
+  get tired() {
+    return this._tired;
   }
   tick(obj) {
     this.walker.tick(obj);
     this.npc.tick(obj);
     this.sitter.tick(obj);
+    this.tired += obj.interval * 1e-6;
+    if (this.walker.transform.position.y > 500 && this.walker.transform.position.x > 500) {
+      this.tired += obj.interval * -1e-3;
+    }
+    this.setStyle({
+      filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.3) * Math.sin(obj.total * 1e-3 + 0.3) * this.tired) * 2, "px)")
+    });
+    this.overlay.setStyle({
+      backgroundColor: "rgba(0, 0, 0, ".concat(Math.sin(obj.total * 1e-4) * Math.sin(obj.total * 1e-3) * Ease.inOutCubic(this._tired) * 0.3, ")")
+    });
+  }
+};
+
+// ts/classes/busywork/screens/main/sections/stat/icon.ts
+var Icon = class extends HTML {
+  constructor(text, size = 25, color = "white") {
+    super({
+      text,
+      classList: ["material-symbols-outlined"],
+      style: {
+        fontSize: size + "px",
+        color,
+        pointerEvents: "none"
+      }
+    });
+  }
+  changeIcon(text) {
+    this.setText(text);
+  }
+};
+
+// ts/classes/busywork/screens/main/sections/stat/statbar.ts
+var StatBar = class _StatBar extends Section {
+  constructor(parent) {
+    super(new Vector2(700, 10), {
+      transition: "width 0.8s ease-in-out, height 0.8s ease-in-out",
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "10px",
+      boxSizing: "border-box",
+      backgroundColor: "transparent",
+      boxShadow: "none",
+      overflow: "visible",
+      gap: "20px",
+      pointerEvents: "none"
+    });
+    this.parent = parent;
+    this.stats = [];
+    this.addStat(_StatBar.getStatBlock("person_apron", 50), 0, () => {
+      return Number(!this.parent.state("bossinroom"));
+    });
+    this.addStat(_StatBar.getStatBlock("battery_android_frame_bolt", 50), 0, () => {
+      return 1 - this.parent.office.tired;
+    }, (element, value) => {
+      var _a;
+      element.setStyle({ backgroundColor: "rgb(".concat(Math.round(153 + (74 - 153) * value), " ").concat(Math.round(60 + (114 - 60) * value), " ").concat(Math.round(60 + (160 - 60) * value), ")") });
+      (_a = element.children[0]) == null ? void 0 : _a.setText(["battery_android_bolt", "battery_android_frame_3", "battery_android_frame_5", "battery_android_frame_full"][Math.floor(value * 3.9)]);
+    });
+  }
+  static getStatBlock(icon, size = 40) {
+    return new Flex({
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      style: {
+        width: "90px",
+        height: "90px",
+        backgroundColor: "rgb(74 114 160)",
+        borderRadius: "50%",
+        boxSizing: "border-box",
+        fontSize: "25px",
+        color: "#fff",
+        textAlign: "center",
+        whiteSpace: "wrap",
+        boxShadow: "inset 3px -10px 30px #0000004f, 1px -3px 7px #0000004f",
+        transition: "margin-top 0.5s ease-in-out, opacity 0.5s ease-in-out, width 0.5s 0.5s ease-in-out",
+        position: "relative",
+        overflow: "hidden"
+      },
+      children: [
+        new Icon(icon, size)
+      ]
+    });
+  }
+  addStat(element, value, getter, setter) {
+    this.append(element);
+    this.stats.push({
+      value,
+      element,
+      getter,
+      setter
+    });
+  }
+  tick(obj) {
+    if (obj.frame % 10 === 0) {
+      this.stats.sort((a, b) => a.value - b.value).forEach((stat, index) => {
+        var _a;
+        stat.value = stat.getter();
+        (_a = stat.setter) == null ? void 0 : _a.call(stat, stat.element, stat.value);
+        stat.element.setStyle({
+          // order: index.toString(),
+          width: stat.value < 0.5 ? "90px" : "0px",
+          transition: stat.value < 0.5 ? "margin-top 0.5s 0.5s ease-in-out, width 0.5s ease-in-out, opacity 0.5s 0.5s ease-in-out" : "margin-top 0.5s ease-in-out, width 0.5s 0.5s ease-in-out, opacity 0.5s ease-in-out"
+        });
+        stat.element.setStyle({
+          marginTop: stat.value < 0.5 ? "0px" : "20px",
+          opacity: stat.value < 0.5 ? "1" : "0",
+          width: stat.value < 0.5 ? "90px" : "0px"
+        });
+      });
+    }
+    ;
   }
 };
 
@@ -1624,17 +1836,16 @@ var TileGame = class extends Screen {
   constructor(game) {
     super("test");
     this.game = game;
-    this.states = {
-      "atdesk": false
-    };
     this.stateData = {};
-    const row = this.append(this.getRow(true, true));
+    const col = this.append(this.getCol(true, true));
+    const row = col.append(this.getRow(false, false));
     row.append(this.office = new Office(), true);
+    col.append(this.statBar = new StatBar(this));
     this.computerCol = row.append(this.getCol(false, false, {
       transition: "width 0.8s ease-in-out"
     }));
-    this.computerCol.append(this.computer = new Computer(this.office.sitter));
-    this.computerCol.append(this.keyboard = new Keyboard(this.computer, this.office.sitter));
+    this.computerCol.append(this.computer = new Computer(this));
+    this.computerCol.append(this.keyboard = new Keyboard(this));
     this.addState(
       "atdesk",
       false,
@@ -1643,14 +1854,14 @@ var TileGame = class extends Screen {
       },
       (value) => {
         this.computerCol.dom.style.width = value ? "450px" : "0px";
+        this.computerCol.dom.style.marginLeft = value ? "0" : "-20px";
         this.office.dom.style.width = value ? "500px" : "700px";
+        this.statBar.dom.style.width = value ? "500px" : "700px";
+        this.office.sitter.seated = value;
         this.office.walker.visible = !value;
-        this.office.sitter.visible = value;
-        this.office.chair.seat.transform.setRotation(value ? -1 : 120);
-        this.office.chair.setPosition(value ? new Vector2(240, 120) : new Vector2(240, 140));
         if (value) {
           this.office.walker.setDestination(void 0);
-          this.office.walker.transform.setPosition(new Vector2(280, 165));
+          this.office.walker.transform.setPosition(new Vector2(280, 160));
         }
       }
     );
@@ -1661,7 +1872,6 @@ var TileGame = class extends Screen {
         return this.office.npc.time > 1500 && this.office.npc.time < 27e3;
       },
       (value) => {
-        console.log("bossinroom", value);
       }
     );
     this.addState(
@@ -1671,7 +1881,6 @@ var TileGame = class extends Screen {
         return this.office.npc.time > 21e3 && this.office.npc.time < 24e3;
       },
       (value) => {
-        console.log("bosslooking", value);
       }
     );
   }
@@ -1683,6 +1892,10 @@ var TileGame = class extends Screen {
       onChange
     };
     (_b = (_a = this.stateData[state]).onChange) == null ? void 0 : _b.call(_a, initial);
+  }
+  state(state) {
+    var _a;
+    return (_a = this.stateData[state]) == null ? void 0 : _a.value;
   }
   getCol(width = false, height = false, style = {}) {
     return new Flex({
@@ -1724,6 +1937,7 @@ var TileGame = class extends Screen {
     this.office.tick(obj);
     this.computer.tick(obj);
     this.keyboard.tick(obj);
+    this.statBar.tick(obj);
     this.syncStates();
   }
 };
@@ -1776,7 +1990,7 @@ var Menu = class extends Screen {
   }
 };
 
-// game.ts
+// ts/game.ts
 var Busywork = class extends Game {
   constructor() {
     super();
