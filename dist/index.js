@@ -494,6 +494,14 @@ var Game = class extends HTML {
   }
 };
 
+// ts/classes/element/screen.ts
+var Screen = class extends HTML {
+  constructor(key) {
+    super({ type: "div", style: { width: "100%", height: "100%", backgroundColor: "#2a3e48" }, classList: ["screen"] });
+    this.key = key;
+  }
+};
+
 // ts/classes/element/flex.ts
 var Flex = class extends HTML {
   constructor(options) {
@@ -507,14 +515,6 @@ var Flex = class extends HTML {
       gap: "".concat(options.gap, "px")
     });
     this.setStyle(options.style || {});
-  }
-};
-
-// ts/classes/element/screen.ts
-var Screen = class extends HTML {
-  constructor(key) {
-    super({ type: "div", style: { width: "100%", height: "100%", backgroundColor: "#2a3e48" }, classList: ["screen"] });
-    this.key = key;
   }
 };
 
@@ -589,14 +589,16 @@ var Ease = {
 
 // ts/classes/busywork/screens/main/util/section.ts
 var Section = class extends HTML {
-  constructor(size, style) {
+  constructor(size, style, gridParams = [1, 1, 1, 1]) {
     super({
       style: __spreadValues({
         width: size.x + "px",
         height: size.y + "px",
         boxShadow: "0px 0px 200px #0000004a",
         overflow: "hidden",
-        borderRadius: "10px"
+        borderRadius: "10px",
+        gridColumn: gridParams[0] + " / span " + gridParams[1],
+        gridRow: gridParams[2] + " / span " + gridParams[3]
       }, style),
       transform: {
         size
@@ -607,15 +609,20 @@ var Section = class extends HTML {
 
 // ts/classes/busywork/screens/main/sections/computer/computer.ts
 var Computer = class extends Section {
-  constructor(parent) {
-    super(new Vector2(450, 440), {
+  constructor(parent, gridParams) {
+    super(new Vector2(450, 350), {
       backgroundColor: "#90857f",
       boxShadow: "0px 0px 200px #0000004a",
-      transition: "width 0.6s ease-in-out"
-    });
+      transition: "width 0.6s ease-in-out",
+      width: "100%",
+      height: "350px",
+      justifyContent: "flex-start"
+    }, gridParams);
     this.parent = parent;
     this._text = "";
     this._code = void 0;
+    this._completed = 0;
+    this.target = 3;
     this.screen = this.append(new HTML({
       style: {
         width: "440px",
@@ -627,7 +634,7 @@ var Computer = class extends Section {
         cursor: "none"
       },
       transform: {
-        position: new Vector2(5, 30)
+        position: new Vector2(5, 10)
       },
       onMouseEnter: () => {
         this.cursor.visible = true;
@@ -647,14 +654,34 @@ var Computer = class extends Section {
       justifyContent: "center",
       style: {
         width: "100%",
-        height: "100%",
+        height: "60%",
         fontSize: "100px",
         color: "#fff",
         fontWeight: "bold",
         lineHeight: "90px",
         fontFamily: "monospace",
         borderRadius: "30px",
-        boxShadow: "inset rgb(0 0 0) 6px 3px 200px 3px",
+        pointerEvents: "none",
+        filter: "sepia(0.6) blur(1px)",
+        letterSpacing: "4px",
+        textAlign: "center",
+        marginTop: "20%"
+      }
+    }));
+    this.textElement2 = this.screen.append(new Flex({
+      flexDirection: "column",
+      text: "completed",
+      alignItems: "center",
+      justifyContent: "center",
+      style: {
+        width: "100%",
+        height: "40%",
+        fontSize: "40px",
+        color: "#fff",
+        fontWeight: "bold",
+        lineHeight: "90px",
+        fontFamily: "monospace",
+        borderRadius: "30px",
         pointerEvents: "none",
         filter: "sepia(0.6) blur(1px)",
         letterSpacing: "4px",
@@ -698,8 +725,9 @@ var Computer = class extends Section {
       }
     }));
     this.cursor.visible = false;
-    this.setCode("0121");
+    this.setCode("012");
     this.setTT("");
+    this.completed = 0;
   }
   get sitter() {
     return this.parent.office.sitter;
@@ -707,31 +735,47 @@ var Computer = class extends Section {
   setCode(code) {
     this._code = code;
   }
+  set completed(value) {
+    this.textElement2.setText(value.toString().padStart(2, "0") + "/" + this.target.toString().padStart(2, "0"));
+    this._completed = value;
+  }
+  get completed() {
+    return this._completed;
+  }
   setTT(text) {
-    var _a, _b;
+    var _a;
     if (!this._code)
       return;
     if (text.length > this._code.length)
       return;
     this._text = text;
-    this.textElement.setText(text.replaceAll("0", "#").replaceAll("1", "$").replaceAll("2", "&").padEnd(((_a = this._code) == null ? void 0 : _a.length) || 4, "_"));
-    if (this._text.length >= ((_b = this._code) == null ? void 0 : _b.length)) {
+    this.textElement.setText(text.replaceAll("0", "#").replaceAll("1", "$").replaceAll("2", "&").replaceAll("3", "!").replaceAll("4", "@").replaceAll("5", "=").padEnd(((_a = this._code) == null ? void 0 : _a.length) || 4, "_"));
+    if (this._text.indexOf("_") === -1) {
       if (this._text.substring(0, this._code.length) === this._code) {
         this.screen.setStyle({
           backgroundColor: "#456c44"
         });
         this.setCode(void 0);
+        this.completed++;
         setTimeout(() => {
-          const code = Array.from({ length: 4 }, () => Math.floor(Math.random() * 3).toString()).join("");
+          const code = Array.from({ length: 6 }, () => Math.floor(Math.random() * 6).toString()).join("");
           this.setCode(code);
-          this.setTT("");
+          this.setTT("______");
         }, 1e3);
       } else {
         this.screen.setStyle({
           backgroundColor: "#6c4444"
         });
         setTimeout(() => {
-          this.setTT("");
+          let NC = "";
+          for (let i = 0; i < this._code.length; i++) {
+            if (this._code[i] === this._text[i]) {
+              NC += this._code[i];
+            } else {
+              NC += "_";
+            }
+          }
+          this.setTT(NC);
         }, 400);
       }
     } else {
@@ -741,14 +785,19 @@ var Computer = class extends Section {
     }
   }
   addTT(text) {
-    this.setTT(this._text + text);
+    const index = this._text.indexOf("_");
+    if (index === -1)
+      return;
+    this.setTT(this._text.substring(0, index) + text + this._text.substring(index + 1));
   }
   tick(obj) {
     super.tick(obj);
     this.scanline.transform.setPosition(new Vector2(0, obj.total % 4e3 / 4e3 * 700 - 100));
-    this.setStyle({
-      filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
-    });
+    if (this.parent.office.tired > 0.25) {
+      this.setStyle({
+        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
+      });
+    }
   }
 };
 
@@ -765,7 +814,7 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
   const wrap = new HTML({
     style: {
       width: "450px",
-      height: "140px",
+      height: "240px",
       backgroundColor: "#a69d97",
       borderRadius: "10px",
       boxShadow: "1px 1.8px 0px #00000040",
@@ -778,14 +827,14 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
     }
   });
   const buttons = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     let e;
     const b = new Button({
       style: {
         width: "94px",
         height: "94px",
         backgroundColor: "#a59c96",
-        borderRadius: "14px",
+        borderRadius: "7px",
         boxShadow: "6px 6px 2px #00000030, inset 28px 28px 28px #00000020",
         cursor: "pointer",
         padding: "0px",
@@ -799,7 +848,7 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
         color: "#776b6bcc",
         fontFamily: "monospace"
       },
-      text: ["#", "$", "&"][i],
+      text: ["#", "$", "&", "!", "@", "="][i],
       onMouseDown: () => {
         b.dom.style.boxShadow = "3px 3px 0px #00000040, inset 28px 28px 28px #00000020";
         onMouseDown(i);
@@ -813,7 +862,10 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
         onMouseUp();
       },
       transform: {
-        position: new Vector2(50 + i * (18 * 7), 14),
+        position: new Vector2(
+          50 + i % 3 * (18 * 7),
+          10 + Math.floor(i / 3) * 110
+        ),
         anchor: new Vector2(0.5, 0.5)
       }
     });
@@ -824,16 +876,21 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
 
 // ts/classes/busywork/screens/main/sections/keyboard/keyboard.ts
 var Keyboard = class extends Section {
-  constructor(parent) {
-    super(new Vector2(450, 140), {});
+  constructor(parent, gridParams) {
+    super(new Vector2(450, 230), {
+      width: "100%",
+      height: "230px",
+      justifyContent: "flex-start",
+      transition: "width 0.6s ease-in-out"
+    }, gridParams);
     this.parent = parent;
     this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
       this.computer.addTT(key.toString());
-      if (key === 0) {
+      if (key === 0 || key === 3) {
         this.sitter.person.armTwist = [0.2, -0.5];
-      } else if (key === 1) {
+      } else if (key === 1 || key === 4) {
         this.sitter.person.armTwist = [1, -0.5];
-      } else if (key === 2) {
+      } else if (key === 2 || key === 5) {
         this.sitter.person.armTwist = [0.5, -0.8];
       }
     }, () => {
@@ -848,9 +905,11 @@ var Keyboard = class extends Section {
   }
   tick(obj) {
     super.tick(obj);
-    this.setStyle({
-      filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
-    });
+    if (this.parent.office.tired > 0.25) {
+      this.setStyle({
+        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
+      });
+    }
   }
 };
 
@@ -979,6 +1038,80 @@ function getLeaf(position, rotation = 0) {
   }));
   return wrap;
 }
+function getCoffeeMachine(position, rotation = 0, leaves = 11, angle = 66) {
+  const table = new HTML({
+    style: {
+      width: "75px",
+      height: "90px",
+      backgroundColor: "#674b47",
+      borderRadius: "5px",
+      border: "10px solid #664a46",
+      boxSizing: "border-box",
+      boxShadow: "inset 0px 0px 20px #79514b, 3px 1px 4px #00000054"
+    },
+    transform: {
+      position,
+      rotation,
+      anchor: new Vector2(0.5, 0.5),
+      size: new Vector2(75, 75)
+    }
+  });
+  table.append(new HTML({
+    style: {
+      width: "50px",
+      height: "40px",
+      backgroundColor: "#504f5a",
+      borderRadius: "5px",
+      boxShadow: "inset 0px 0px 11px #2f2828, 3px 1px 4px #00000054"
+    },
+    transform: {
+      position: new Vector2(0, 8),
+      anchor: new Vector2(0.5, 0.5),
+      size: new Vector2(50, 40)
+    }
+  }));
+  table.append(getTopCup(new Vector2(27, 15), 14));
+  table.append(getTopCup(new Vector2(27, 17), -10));
+  table.append(getTopCup(new Vector2(30, 30), 180));
+  table.append(getTopCup(new Vector2(30, 30), 4));
+  table.append(getTopCup(new Vector2(16, 25), 170));
+  return table;
+}
+function getTopCup(position, rotation) {
+  const wrap = new HTML({
+    style: {
+      width: "12px",
+      height: "12px",
+      backgroundColor: "#e4e3e0",
+      borderRadius: "100%",
+      boxSizing: "border-box",
+      border: "2px solid #e4e3e0",
+      boxShadow: "inset 4px 0px 2px #00000020, 0px 0px 2px #00000090"
+    },
+    transform: {
+      position,
+      rotation,
+      anchor: new Vector2(0.5, 0.5),
+      size: new Vector2(12, 12)
+    }
+  });
+  wrap.append(new HTML({
+    style: {
+      width: "4px",
+      height: "4px",
+      backgroundColor: "#e4e3e0",
+      borderRadius: "1px",
+      boxShadow: "inset 10px 0px 4px #00000030, 0px 0px 1px #00000090",
+      zIndex: "-1"
+    },
+    transform: {
+      position: new Vector2(5, -3),
+      anchor: new Vector2(0.5, 0.5),
+      size: new Vector2(10, 2)
+    }
+  }));
+  return wrap;
+}
 function getPhone(position, rotation) {
   const wrap = new HTML({
     style: {
@@ -1027,27 +1160,6 @@ function getKeyboard(position, rotation) {
       size: new Vector2(60, 20)
     }
   });
-  for (let i = 0; i < 3; i++) {
-    let e;
-    const b = new HTML({
-      style: {
-        width: "14px",
-        height: "14px",
-        backgroundColor: "#a59c96",
-        borderRadius: "2px",
-        boxShadow: "1px 1.8px 1px #00000040, inset 2px 2px 3px #00000020",
-        cursor: "pointer",
-        padding: "0px",
-        border: "none"
-      },
-      transform: {
-        position: new Vector2(5 + i * 18, 2),
-        anchor: new Vector2(0.5, 0.5),
-        size: new Vector2(14, 14)
-      }
-    });
-    wrap.append(b);
-  }
   wrap.append(new HTML({
     style: {
       width: "15px",
@@ -1557,15 +1669,16 @@ var Sitter = class extends Walker {
 
 // ts/classes/busywork/screens/main/sections/office/office.ts
 var Office = class extends Section {
-  constructor() {
+  constructor(gridParams) {
     super(new Vector2(700, 600), {
       backgroundColor: "#354c59",
+      transition: "width 0.6s ease-in-out, margin-left 0.6s ease-in-out",
+      width: "100%",
+      height: "600px",
+      overflow: "hidden",
       display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      transition: "width 0.8s ease-in-out, margin-left 0.8s ease-in-out"
-    });
+      justifyContent: "center"
+    }, gridParams);
     this.mouse = false;
     this.blockers = [
       //walls
@@ -1622,7 +1735,7 @@ var Office = class extends Section {
       style: {
         width: "700px",
         height: "600px",
-        position: "relative"
+        overflow: "hidden"
       }
     }));
     const floor = wrap.append(new HTML({
@@ -1681,7 +1794,7 @@ var Office = class extends Section {
     }));
     wrap.append(getPlant(new Vector2(30, 30), 0, 6, 80));
     wrap.append(getPlant(new Vector2(590, 30), 40, 7, 50));
-    wrap.append(getPlant(new Vector2(590, 490), 40, 9, 40));
+    wrap.append(getCoffeeMachine(new Vector2(590, 490), 40, 9, 40));
     this.npc = new Boss(new Vector2(350, 700), 0, "half");
     wrap.append(this.npc);
     this.overlay = this.append(new HTML({
@@ -1691,6 +1804,7 @@ var Office = class extends Section {
         cursor: "pointer"
       }
     }));
+    console.log(this.overlay);
     this.overlay.dom.addEventListener("mousedown", (e) => {
       this.mouse = true;
       this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
@@ -1705,7 +1819,7 @@ var Office = class extends Section {
         this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
       }
     });
-    this.tired = 0;
+    this.tired = 0.2;
   }
   set tired(value) {
     this._tired = Utils.clamp(value, 0, 1);
@@ -1718,16 +1832,18 @@ var Office = class extends Section {
   }
   tick(obj) {
     super.tick(obj);
-    this.tired += obj.interval * 1e-6;
+    this.tired += obj.interval * 5e-6;
     if (this.walker.transform.position.y > 500 && this.walker.transform.position.x > 500) {
       this.tired += obj.interval * -1e-3;
     }
-    this.setStyle({
-      filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.3) * Math.sin(obj.total * 1e-3 + 0.3) * this.tired) * 2, "px)")
-    });
-    this.overlay.setStyle({
-      backgroundColor: "rgba(0, 0, 0, ".concat(Math.sin(obj.total * 1e-4) * Math.sin(obj.total * 1e-3) * Ease.inOutCubic(this._tired) * 0.3, ")")
-    });
+    if (obj.frame % 15 === 0 && this.tired > 0.25) {
+      this.setStyle({
+        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.3) * Math.sin(obj.total * 1e-3 + 0.3) * this.tired) * 2, "px)")
+      });
+      this.overlay.setStyle({
+        backgroundColor: "rgba(0, 0, 0, ".concat(Math.sin(obj.total * 1e-4) * Math.sin(obj.total * 1e-3) * Ease.inOutCubic(this._tired) * 0.3, ")")
+      });
+    }
   }
 };
 
@@ -1751,7 +1867,7 @@ var Icon = class extends HTML {
 
 // ts/classes/busywork/screens/main/sections/stat/statbar.ts
 var StatBar = class _StatBar extends Section {
-  constructor(parent) {
+  constructor(parent, gridParams) {
     super(new Vector2(700, 10), {
       transition: "width 0.8s ease-in-out, height 0.8s ease-in-out",
       display: "flex",
@@ -1764,8 +1880,10 @@ var StatBar = class _StatBar extends Section {
       boxShadow: "none",
       overflow: "visible",
       gap: "20px",
-      pointerEvents: "none"
-    });
+      pointerEvents: "none",
+      width: "100%",
+      height: "100%"
+    }, gridParams);
     this.parent = parent;
     this.stats = [];
     this.addStat(_StatBar.getStatBlock("person_apron", 50), 0, () => {
@@ -2208,12 +2326,14 @@ var Cup = class extends HTML {
 
 // ts/classes/busywork/screens/main/sections/coffee/coffee.ts
 var Coffee = class extends Section {
-  constructor(parent) {
+  constructor(parent, gridParams) {
     super(new Vector2(400, 600), {
       backgroundColor: "#354c59",
       boxShadow: "0px 0px 200px #0000004a",
-      transition: "width 0.6s ease-in-out"
-    });
+      transition: "width 0.6s ease-in-out",
+      width: "400px",
+      justifyContent: "flex-start"
+    }, gridParams);
     this.parent = parent;
     this.append(new Tile({
       tileSize: new Vector2(80, 120),
@@ -2276,33 +2396,88 @@ var Coffee = class extends Section {
   }
 };
 
+// ts/classes/busywork/screens/main/sections/debug.ts
+var Debug = class extends Section {
+  constructor(parent, gridParams) {
+    super(new Vector2(700, 20), {
+      transition: "width 0.8s ease-in-out, height 0.8s ease-in-out",
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "10px",
+      boxSizing: "border-box",
+      backgroundColor: "transparent",
+      boxShadow: "none",
+      overflow: "visible",
+      pointerEvents: "none",
+      background: "#3c5561",
+      width: "100%",
+      height: "100%"
+    }, gridParams);
+    this.parent = parent;
+  }
+};
+
+// ts/classes/element/grid.ts
+var Grid = class extends HTML {
+  constructor(options) {
+    super(__spreadProps(__spreadValues({}, options), { classList: [...options.classList || [], "_grid"] }));
+    this.setStyle({
+      gridTemplateColumns: options.columns || "1fr",
+      gridTemplateRows: options.rows || "1fr",
+      gap: "".concat(options.gap, "px"),
+      alignContent: options.alignContent || "center",
+      alignItems: options.alignItems || "center",
+      justifyContent: options.justifyContent || "center",
+      justifyItems: options.justifyItems || "center"
+    });
+    this.setStyle(options.style || {});
+  }
+  setTemplateColumns(columns) {
+    this.setStyle({
+      gridTemplateColumns: columns
+    });
+  }
+  setTemplateRows(rows) {
+    this.setStyle({
+      gridTemplateRows: rows
+    });
+  }
+};
+
 // ts/classes/busywork/screens/main/tilegame.ts
 var TileGame = class extends Screen {
   constructor(game) {
     super("test");
     this.game = game;
     this.stateData = {};
-    const col = this.append(this.getCol(true, true));
-    const row = col.append(this.getRow(false, false));
-    row.append(this.office = new Office(), true);
-    col.append(this.statBar = new StatBar(this));
-    this.computerCol = row.append(this.getCol(false, false, {
-      transition: "width 0.8s ease-in-out"
+    this.append(this.grid = new Grid({
+      columns: "700px 450px",
+      rows: "50px 350px 230px 0px",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 20,
+      style: {
+        width: "100%",
+        height: "100%",
+        transition: "grid-template-columns 0.6s ease-in-out, grid-template-rows 0.6s ease-in-out"
+      }
     }));
-    this.computerCol.append(this.computer = new Computer(this));
-    this.computerCol.append(this.keyboard = new Keyboard(this));
-    row.append(this.coffee = new Coffee(this));
+    this.grid.append(this.debug = new Debug(this, [1, 2, 1, 1]));
+    this.grid.append(this.office = new Office([1, 1, 2, 2]));
+    this.grid.append(this.coffee = new Coffee(this, [2, 1, 2, 2]));
+    this.grid.append(this.computer = new Computer(this, [2, 1, 2, 1]));
+    this.grid.append(this.keyboard = new Keyboard(this, [2, 1, 3, 1]));
+    this.grid.append(this.statBar = new StatBar(this, [1, 1, 4, 1]));
     this.addState(
       "atdesk",
       false,
       () => {
-        return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 30 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 30);
+        return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 60 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 60);
       },
       (value) => {
-        this.computerCol.dom.style.width = value ? "450px" : "0px";
-        this.computerCol.dom.style.marginLeft = value ? "0" : "-20px";
-        this.office.dom.style.width = value ? "500px" : "700px";
-        this.statBar.dom.style.width = value ? "500px" : "700px";
+        this.updateGridSize();
         this.office.sitter.seated = value;
         this.office.walker.visible = !value;
         if (value) {
@@ -2315,7 +2490,7 @@ var TileGame = class extends Screen {
       "atcoffeemachine",
       false,
       () => {
-        console.log(this.office.walker.transform.position.distance(new Vector2(650, 550)));
+        this.updateGridSize();
         return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
       },
       (value) => {
@@ -2350,30 +2525,36 @@ var TileGame = class extends Screen {
     var _a;
     return (_a = this.stateData[state]) == null ? void 0 : _a.value;
   }
-  getCol(width = false, height = false, style = {}) {
-    return new Flex({
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 20,
-      style: __spreadValues({
-        overflow: "hidden",
-        width: width ? "100%" : "auto",
-        height: height ? "100%" : "auto"
-      }, style)
+  updateGridSize() {
+    let w1 = 680;
+    let w2 = 0;
+    if (this.state("atcoffeemachine")) {
+      w2 = 400;
+    } else if (this.state("atdesk")) {
+      w1 = 500;
+      w2 = 450;
+    }
+    if (w2) {
+      this.office.setStyle({
+        width: this.state("atdesk") ? "".concat(w1, "px") : "100%"
+        // marginLeft: '0px',
+      });
+    } else {
+      this.office.setStyle({
+        width: this.state("atdesk") ? "".concat(w1, "px") : "calc(100% + 20px)"
+        // marginLeft: this.state('atdesk') ? '0px' : '20px',
+      });
+    }
+    this.computer.setStyle({
+      width: this.state("atdesk") ? "450px" : "0%"
     });
-  }
-  getRow(width = false, height = false, style = {}) {
-    return new Flex({
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 20,
-      style: __spreadValues({
-        width: width ? "100%" : "auto",
-        height: height ? "100%" : "auto"
-      }, style)
+    this.keyboard.setStyle({
+      width: this.state("atdesk") ? "450px" : "0%"
     });
+    this.coffee.setStyle({
+      width: this.state("atcoffeemachine") ? "400px" : "0%"
+    });
+    this.grid.setTemplateColumns("".concat(w1, "px ").concat(w2, "px"));
   }
   syncStates() {
     Object.values(this.stateData).forEach((data) => {

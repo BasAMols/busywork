@@ -10,88 +10,89 @@ import { Boss } from './people/boss';
 import { Player } from './people/player';
 import { Sitter } from './people/sitter';
 import { Walker } from './people/walker';
-import { getPlant } from './prop';
+import { getCoffeeMachine, getPlant } from './prop';
 
 
 
 export class Office extends Section {
     walker: Walker;
     mouse: boolean = false;
-    npc: Boss;  
+    npc: Boss;
     sitter: Sitter;
 
     public readonly blockers: {
         size: Vector2;
         position: Vector2;
     }[] = [
-        //walls
-        {
-            position: new Vector2(0, 0),
-            size: new Vector2(20, 600),
-        },
-        {
-            position: new Vector2(0, 0),
-            size: new Vector2(700, 20),
-        },
-        {
-            position: new Vector2(0, 580),
-            size: new Vector2(700, 20),
-        },
-        {
-            position: new Vector2(680, 0),
-            size: new Vector2(20, 600),
-        },
-        // desks
-        {
-            position: new Vector2(0, 265),
-            size: new Vector2(150, 310),
-        },
-        {
-            position: new Vector2(140, 0),
-            size: new Vector2(300, 130),
-        },
-        {
-            position: new Vector2(560, 130),
-            size: new Vector2(150, 300),
-        },
-        //chairs 
-        {
-            position: new Vector2(130, 400),
-            size: new Vector2(55, 80),
-        },
-        {
-            position: new Vector2(470, 200),
-            size: new Vector2(100, 80),
-        },
-        // plants
-        {
-            position: new Vector2(30, 30),
-            size: new Vector2(80, 80),
-        },
-        {
-            position: new Vector2(590, 30),
-            size: new Vector2(80, 80),
-        },
-        
-    ];
+            //walls
+            {
+                position: new Vector2(0, 0),
+                size: new Vector2(20, 600),
+            },
+            {
+                position: new Vector2(0, 0),
+                size: new Vector2(700, 20),
+            },
+            {
+                position: new Vector2(0, 580),
+                size: new Vector2(700, 20),
+            },
+            {
+                position: new Vector2(680, 0),
+                size: new Vector2(20, 600),
+            },
+            // desks
+            {
+                position: new Vector2(0, 265),
+                size: new Vector2(150, 310),
+            },
+            {
+                position: new Vector2(140, 0),
+                size: new Vector2(300, 130),
+            },
+            {
+                position: new Vector2(560, 130),
+                size: new Vector2(150, 300),
+            },
+            //chairs 
+            {
+                position: new Vector2(130, 400),
+                size: new Vector2(55, 80),
+            },
+            {
+                position: new Vector2(470, 200),
+                size: new Vector2(100, 80),
+            },
+            // plants
+            {
+                position: new Vector2(30, 30),
+                size: new Vector2(80, 80),
+            },
+            {
+                position: new Vector2(590, 30),
+                size: new Vector2(80, 80),
+            },
+
+        ];
     chair: Chair;
     overlay: HTML;
 
-    public constructor() {
+    public constructor(gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(700, 600), {
             backgroundColor: '#354c59',
+            transition: 'width 0.6s ease-in-out, margin-left 0.6s ease-in-out',
+            width: '100%',
+            height: '600px',
+            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
             justifyContent: 'center',
-            transition: 'width 0.8s ease-in-out, margin-left 0.8s ease-in-out',
-        });
+        }, gridParams);
 
         const wrap = this.append(new HTML({
             style: {
                 width: '700px',
                 height: '600px',
-                position: 'relative',
+                overflow: 'hidden',
             }
         }));
 
@@ -135,13 +136,13 @@ export class Office extends Section {
 
 
         wrap.append(this.chair = new Chair(new Vector2(240, 130), -1));
-        
+
         wrap.append(getDesk(new Vector2(140, 15), -1, 1, {
         }));
-        
+
         this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: 'none' }, this.chair);
         wrap.append(this.sitter);
-       
+
         wrap.append(new Chair(new Vector2(480, 200), 120, {
             filter: 'saturate(0.4)',
         }));
@@ -164,9 +165,10 @@ export class Office extends Section {
 
         wrap.append(getPlant(new Vector2(30, 30), 0, 6, 80));
         wrap.append(getPlant(new Vector2(590, 30), 40, 7, 50));
-        wrap.append(getPlant(new Vector2(590, 490), 40, 9, 40));
+        // wrap.append(getPlant(new Vector2(590, 490), 40, 9, 40));
+        wrap.append(getCoffeeMachine(new Vector2(590, 490), 40, 9, 40));
 
-       
+
         this.npc = new Boss(new Vector2(350, 700), 0, 'half');
         wrap.append(this.npc);
 
@@ -177,6 +179,9 @@ export class Office extends Section {
                 cursor: 'pointer',
             }
         }));
+
+        console.log(this.overlay);
+        
         this.overlay.dom.addEventListener('mousedown', (e) => {
             this.mouse = true;
             this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
@@ -191,14 +196,14 @@ export class Office extends Section {
                 this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
             }
         });
-        this.tired = 0;
+        this.tired = 0.2;
     }
 
     public _tired: number = 0;
     public set tired(value: number) {
         this._tired = Utils.clamp(value, 0, 1);
         this.overlay.setStyle({
-            boxShadow: `inset 0px 0px 290px ${(Ease.inOutCubic(this._tired)*360) - 180}px  #00000080`,
+            boxShadow: `inset 0px 0px 290px ${(Ease.inOutCubic(this._tired) * 360) - 180}px  #00000080`,
         });
     }
     public get tired() {
@@ -207,19 +212,22 @@ export class Office extends Section {
 
     public tick(obj: TickerReturnData) {
 
-        
+
         super.tick(obj);
-        
-        this.tired += obj.interval * 0.000001;
+
+        this.tired += obj.interval * 0.000005;
         if (this.walker.transform.position.y > 500 && this.walker.transform.position.x > 500) {
             this.tired += obj.interval * -0.001;
         }
-        this.setStyle({
-            filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.3)*Math.sin(obj.total*0.001 + 0.3)*this.tired)*2}px)`,
+        if (obj.frame % 15 === 0 && this.tired > 0.25) {
 
-        });
-        this.overlay.setStyle({
-            backgroundColor: `rgba(0, 0, 0, ${Math.sin(obj.total*0.0001)*Math.sin(obj.total*0.001)*Ease.inOutCubic(this._tired)*0.3})`,
-        });
+            this.setStyle({
+                filter: `blur(${Ease.inOutCubic(Math.sin(obj.total * 0.0001 + 0.3) * Math.sin(obj.total * 0.001 + 0.3) * this.tired) * 2}px)`,
+            });
+            this.overlay.setStyle({
+                backgroundColor: `rgba(0, 0, 0, ${Math.sin(obj.total * 0.0001) * Math.sin(obj.total * 0.001) * Ease.inOutCubic(this._tired) * 0.3})`,
+            });
+        }
+
     }
 }

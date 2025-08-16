@@ -64,6 +64,89 @@ export function getLeaf(position: Vector2, rotation: number = 0) {
 }
 
 
+export function getCoffeeMachine(position: Vector2, rotation: number = 0, leaves: number = 11, angle: number = 66) {
+    const table = new HTML({
+        style: {
+            width: '75px',
+            height: '90px',
+            backgroundColor: '#674b47',
+            borderRadius: '5px',
+            border: '10px solid #664a46',
+            boxSizing: 'border-box',
+            boxShadow: 'inset 0px 0px 20px #79514b, 3px 1px 4px #00000054',
+        },
+        transform: {    
+            position: position,
+            rotation: rotation,
+            anchor: new Vector2(0.5, 0.5),
+            size: new Vector2(75, 75),
+        }
+    });
+
+    table.append(new HTML({
+        style: {
+            width: '50px',
+            height: '40px',
+            backgroundColor: '#504f5a',
+            borderRadius: '5px',
+            boxShadow: 'inset 0px 0px 11px #2f2828, 3px 1px 4px #00000054',
+        },
+        transform: {
+            position: new Vector2(0, 8),
+            anchor: new Vector2(0.5, 0.5),
+            size: new Vector2(50, 40),
+        }
+    }));
+
+    table.append(getTopCup(new Vector2(27, 15), 14));
+    table.append(getTopCup(new Vector2(27, 17), -10));
+    table.append(getTopCup(new Vector2(30, 30), 180));
+    table.append(getTopCup(new Vector2(30, 30), 4));
+    table.append(getTopCup(new Vector2(16, 25), 170));
+
+    return table;
+}
+
+export function getTopCup(position: Vector2, rotation: number) {
+    const wrap = new HTML({
+        style: {
+            width: '12px',
+            height: '12px',
+            backgroundColor: '#e4e3e0',
+            borderRadius: '100%',
+            boxSizing: 'border-box',
+            border: '2px solid #e4e3e0',
+            boxShadow: 'inset 4px 0px 2px #00000020, 0px 0px 2px #00000090',
+
+        },
+        transform: {
+            position: position,
+            rotation: rotation,
+            anchor: new Vector2(0.5, 0.5),
+            size: new Vector2(12, 12),
+        }
+    });
+
+    wrap.append(new HTML({
+        style: {
+            width: '4px',
+            height: '4px',
+            backgroundColor: '#e4e3e0',
+            borderRadius: '1px',
+            boxShadow: 'inset 10px 0px 4px #00000030, 0px 0px 1px #00000090',
+            zIndex: '-1',
+
+        },
+        transform: {
+            position: new Vector2(5, -3),
+            anchor: new Vector2(0.5, 0.5),
+            size: new Vector2(10, 2),
+        }
+    }));
+
+    return wrap;
+}
+
 export function getPhone(position: Vector2, rotation: number) {
     const wrap = new HTML({
         style: {
@@ -117,28 +200,28 @@ export function getKeyboard(position: Vector2, rotation: number) {
         },
     });
 
-    for (let i = 0; i < 3; i++) {
-        let e: NodeJS.Timeout;
-        const b = new HTML({
-            style: {
-                width: '14px',
-                height: '14px',
-                backgroundColor: '#a59c96',
-                borderRadius: '2px',
-                boxShadow: '1px 1.8px 1px #00000040, inset 2px 2px 3px #00000020',
-                cursor: 'pointer',
-                padding: '0px',
-                border: 'none',
-            },
+    // for (let i = 0; i < 3; i++) {
+    //     let e: NodeJS.Timeout;
+    //     const b = new HTML({
+    //         style: {
+    //             width: '14px',
+    //             height: '14px',
+    //             backgroundColor: '#a59c96',
+    //             borderRadius: '2px',
+    //             boxShadow: '1px 1.8px 1px #00000040, inset 2px 2px 3px #00000020',
+    //             cursor: 'pointer',
+    //             padding: '0px',
+    //             border: 'none',
+    //         },
 
-            transform: {
-                position: new Vector2(5 + i * 18, 2),
-                anchor: new Vector2(0.5, 0.5),
-                size: new Vector2(14, 14),
-            }
-        });
-        wrap.append(b);
-    }
+    //         transform: {
+    //             position: new Vector2(5 + i * 18, 2),
+    //             anchor: new Vector2(0.5, 0.5),
+    //             size: new Vector2(14, 14),
+    //         }
+    //     });
+    //     wrap.append(b);
+    // }
 
     wrap.append(new HTML({
         style: {

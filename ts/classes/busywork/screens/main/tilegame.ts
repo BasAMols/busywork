@@ -1,5 +1,3 @@
-import { HTML } from '../../../element/element';
-import { Flex } from '../../../element/flex';
 import { Screen } from "../../../element/screen";
 import { TickerReturnData } from '../../../ticker';
 import { Busywork } from '../../../../game';
@@ -9,6 +7,8 @@ import { Office } from './sections/office/office';
 import { Vector2 } from '../../../math/vector2';
 import { StatBar } from './sections/stat/statbar';
 import { Coffee } from './sections/coffee/coffee';
+import { Debug } from './sections/debug';
+import { Grid } from '../../../element/grid';
 
 
 export class TileGame extends Screen {
@@ -26,6 +26,8 @@ export class TileGame extends Screen {
 
         };
     statBar: StatBar;
+    debug: Debug;
+    grid: Grid;
 
     addState(state: string, initial: boolean, condition?: () => boolean, onChange?: (value: boolean) => void) {
         this.stateData[state] = {
@@ -40,64 +42,72 @@ export class TileGame extends Screen {
         return this.stateData[state]?.value;
     }
 
-    computerCol: HTML;
+    updateGridSize() {
 
-    private getCol(width: boolean = false, height: boolean = false, style: Partial<CSSStyleDeclaration> = {}) {
-        return new Flex({
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 20,
-            style: {
-                overflow: 'hidden',
-                width: width ? '100%' : 'auto',
-                height: height ? '100%' : 'auto',
-                ...style,
-            }
+        let w1 = 680;
+        let w2 = 0;
+        if (this.state('atcoffeemachine')) {
+            w2 = 400;
+        } else if (this.state('atdesk')) {
+            w1 = 500;
+            w2 = 450;
+        }
+
+        if (w2) {
+            this.office.setStyle({
+                width: this.state('atdesk') ? `${w1}px` : '100%',
+                // marginLeft: '0px',
+            });
+        } else {
+            this.office.setStyle({
+                width: this.state('atdesk') ? `${w1}px` : 'calc(100% + 20px)',
+                // marginLeft: this.state('atdesk') ? '0px' : '20px',
+            });
+        }
+        this.computer.setStyle({
+            width: this.state('atdesk') ? '450px' : '0%',
         });
-    }
-
-    private getRow(width: boolean = false, height: boolean = false, style: Partial<CSSStyleDeclaration> = {}) {
-
-        return new Flex({
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 20,
-            style: {
-                width: width ? '100%' : 'auto',
-                height: height ? '100%' : 'auto',
-                ...style,
-            }
+        this.keyboard.setStyle({
+            width: this.state('atdesk') ? '450px' : '0%',
         });
+        this.coffee.setStyle({
+            width: this.state('atcoffeemachine') ? '400px' : '0%',
+        });
+
+        this.grid.setTemplateColumns(`${w1}px ${w2}px`);
     }
 
     public constructor(private game: Busywork) {
         super('test');
 
-        const col = this.append(this.getCol(true, true));
-        const row = col.append(this.getRow(false, false));
-        row.append(this.office = new Office(), true);
-        col.append(this.statBar = new StatBar(this));
-
-        this.computerCol = row.append(this.getCol(false, false, {
-            transition: 'width 0.8s ease-in-out',
+        this.append(this.grid = new Grid({
+            columns: '700px 450px',
+            rows: '50px 350px 230px 0px',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 20,
+            style: {
+                width: '100%',
+                height: '100%',
+                transition: 'grid-template-columns 0.6s ease-in-out, grid-template-rows 0.6s ease-in-out',
+            }
         }));
-        this.computerCol.append(this.computer = new Computer(this));
-        this.computerCol.append(this.keyboard = new Keyboard(this));
+        this.grid.append(this.debug = new Debug(this, [1, 2, 1, 1]));
+        this.grid.append(this.office = new Office([1, 1, 2, 2]));
+        this.grid.append(this.coffee = new Coffee(this, [2, 1, 2, 2]));
+        this.grid.append(this.computer = new Computer(this, [2, 1, 2, 1]));
+        this.grid.append(this.keyboard = new Keyboard(this, [2, 1, 3, 1]));
+        this.grid.append(this.statBar = new StatBar(this, [1, 1, 4, 1]));
 
-        row.append(this.coffee = new Coffee(this));
 
         this.addState('atdesk', false,
             () => {
-                return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 30 &&
-                    (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 30);
+                return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 60 &&
+                    (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 60);
             },
             (value) => {
-                this.computerCol.dom.style.width = value ? '450px' : '0px';
-                this.computerCol.dom.style.marginLeft = value ? '0' : '-20px';
-                this.office.dom.style.width = value ? '500px' : '700px';
-                this.statBar.dom.style.width = value ? '500px' : '700px';
+                // this.computerCol.dom.style.width = value ? '450px' : '0px';
+                this.updateGridSize();
                 this.office.sitter.seated = value;
                 this.office.walker.visible = !value;
                 if (value) {
@@ -108,8 +118,7 @@ export class TileGame extends Screen {
         );
         this.addState('atcoffeemachine', false,
             () => {
-                console.log(this.office.walker.transform.position.distance(new Vector2(650, 550)));
-                
+                this.updateGridSize();
                 return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 &&
                     (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
             },

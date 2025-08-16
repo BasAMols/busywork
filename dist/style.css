@@ -46,7 +46,13 @@ body {
 ._flex {
     display: flex;
 }
-
 ._flex>* {
-    position: relative;
+    position: relative !important;
+}
+
+._grid {
+    display: grid;
+}
+._grid>* {
+    position: relative !important;
 }

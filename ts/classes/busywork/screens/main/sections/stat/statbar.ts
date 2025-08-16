@@ -16,7 +16,7 @@ export class StatBar extends Section {
         getter: () => number;
         setter: (element: HTML, value: number) => void;
     }[] = [];
-    public constructor(private parent: TileGame) {
+    public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(700, 10), {
             transition: 'width 0.8s ease-in-out, height 0.8s ease-in-out',
             display: 'flex',
@@ -30,7 +30,9 @@ export class StatBar extends Section {
             overflow: 'visible',
             gap: '20px',
             pointerEvents: 'none',
-        });
+            width: '100%',
+            height: '100%',
+        }, gridParams);
 
         this.addStat(StatBar.getStatBlock('person_apron', 50), 0, () => {
             return Number(!this.parent.state('bossinroom'));
@@ -89,7 +91,7 @@ export class StatBar extends Section {
                 stat.element.setStyle({
                     // order: index.toString(),
                     width: stat.value < 0.5 ? '90px' : '0px',
-                    transition: stat.value < 0.5 ?'margin-top 0.5s 0.5s ease-in-out, width 0.5s ease-in-out, opacity 0.5s 0.5s ease-in-out': 'margin-top 0.5s ease-in-out, width 0.5s 0.5s ease-in-out, opacity 0.5s ease-in-out',
+                    transition: stat.value < 0.5 ? 'margin-top 0.5s 0.5s ease-in-out, width 0.5s ease-in-out, opacity 0.5s 0.5s ease-in-out' : 'margin-top 0.5s ease-in-out, width 0.5s 0.5s ease-in-out, opacity 0.5s ease-in-out',
                 });
                 stat.element.setStyle({
                     marginTop: stat.value < 0.5 ? '0px' : '20px',
