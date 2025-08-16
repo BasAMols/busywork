@@ -181,7 +181,7 @@ export class Office extends Section {
         }));
 
         console.log(this.overlay);
-        
+
         this.overlay.dom.addEventListener('mousedown', (e) => {
             this.mouse = true;
             this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
@@ -215,19 +215,25 @@ export class Office extends Section {
 
         super.tick(obj);
 
-        this.tired += obj.interval * 0.000005;
-        if (this.walker.transform.position.y > 500 && this.walker.transform.position.x > 500) {
-            this.tired += obj.interval * -0.001;
-        }
-        if (obj.frame % 15 === 0 && this.tired > 0.25) {
+        this.tired += obj.interval * 0.000003;
 
-            this.setStyle({
-                filter: `blur(${Ease.inOutCubic(Math.sin(obj.total * 0.0001 + 0.3) * Math.sin(obj.total * 0.001 + 0.3) * this.tired) * 2}px)`,
-            });
-            this.overlay.setStyle({
-                backgroundColor: `rgba(0, 0, 0, ${Math.sin(obj.total * 0.0001) * Math.sin(obj.total * 0.001) * Ease.inOutCubic(this._tired) * 0.3})`,
-            });
-        }
+        if (obj.frame % 5 === 0) {
 
+            if (this.tired > 0.25) {
+                this.setStyle({
+                    filter: `blur(${Ease.inOutCubic(Math.sin(obj.total * 0.0001 + 0.3) * Math.sin(obj.total * 0.001 + 0.3) * this.tired) * 2}px)`,
+                });
+                this.overlay.setStyle({
+                    backgroundColor: `rgba(0, 0, 0, ${Math.sin(obj.total * 0.0001) * Math.sin(obj.total * 0.001) * Ease.inOutCubic(this._tired) * 0.3})`,
+                });
+            } else {
+                this.setStyle({
+                    filter: `blur(0px)`,
+                });
+                this.overlay.setStyle({
+                    backgroundColor: `rgba(0, 0, 0, 0)`,
+                });
+            }
+        }
     }
 }

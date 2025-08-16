@@ -797,6 +797,10 @@ var Computer = class extends Section {
       this.setStyle({
         filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
       });
+    } else {
+      this.setStyle({
+        filter: "blur(0px)"
+      });
     }
   }
 };
@@ -908,6 +912,10 @@ var Keyboard = class extends Section {
     if (this.parent.office.tired > 0.25) {
       this.setStyle({
         filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
+      });
+    } else {
+      this.setStyle({
+        filter: "blur(0px)"
       });
     }
   }
@@ -1832,17 +1840,23 @@ var Office = class extends Section {
   }
   tick(obj) {
     super.tick(obj);
-    this.tired += obj.interval * 5e-6;
-    if (this.walker.transform.position.y > 500 && this.walker.transform.position.x > 500) {
-      this.tired += obj.interval * -1e-3;
-    }
-    if (obj.frame % 15 === 0 && this.tired > 0.25) {
-      this.setStyle({
-        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.3) * Math.sin(obj.total * 1e-3 + 0.3) * this.tired) * 2, "px)")
-      });
-      this.overlay.setStyle({
-        backgroundColor: "rgba(0, 0, 0, ".concat(Math.sin(obj.total * 1e-4) * Math.sin(obj.total * 1e-3) * Ease.inOutCubic(this._tired) * 0.3, ")")
-      });
+    this.tired += obj.interval * 3e-6;
+    if (obj.frame % 5 === 0) {
+      if (this.tired > 0.25) {
+        this.setStyle({
+          filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.3) * Math.sin(obj.total * 1e-3 + 0.3) * this.tired) * 2, "px)")
+        });
+        this.overlay.setStyle({
+          backgroundColor: "rgba(0, 0, 0, ".concat(Math.sin(obj.total * 1e-4) * Math.sin(obj.total * 1e-3) * Ease.inOutCubic(this._tired) * 0.3, ")")
+        });
+      } else {
+        this.setStyle({
+          filter: "blur(0px)"
+        });
+        this.overlay.setStyle({
+          backgroundColor: "rgba(0, 0, 0, 0)"
+        });
+      }
     }
   }
 };

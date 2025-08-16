@@ -225,6 +225,10 @@ export class Computer extends Section {
             this.setStyle({
                 filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.2)*Math.sin(obj.total*0.001 + 0.2)*this.parent.office.tired)*4}px)`,
             });
+        } else {
+            this.setStyle({
+                filter: `blur(0px)`,
+            });
         }
     }
 }
