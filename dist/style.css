@@ -10,16 +10,24 @@ body {
     height: 100vh;
 }
 
-*{
+* {
     user-select: none;
 }
 
 .material-symbols-outlined {
-  font-variation-settings:
-  'FILL' 0,
-  'wght' 400,
-  'GRAD' 0,
-  'opsz' 24
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 1000,
+        'GRAD' 1000,
+        'opsz' 60
+}
+
+.material-symbols-outlined.solid {
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 1000,
+        'GRAD' 1000,
+        'opsz' 60
 }
 
 /* HTML */
@@ -28,15 +36,17 @@ body {
 }
 
 ._button {
-    border: 1px solid black; 
+    border: 1px solid black;
     border-radius: 2px;
     padding: 5px 10px;
     cursor: pointer;
     font-family: Arial, Helvetica, sans-serif;
 }
+
 ._flex {
     display: flex;
 }
-._flex > *{
+
+._flex>* {
     position: relative;
 }

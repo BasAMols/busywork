@@ -7,12 +7,12 @@ export interface HTMLOptions {
     transform?: TransformOptions;
     classList?: string[];
     text?: string;
-    onClick?: () => void;
-    onMouseDown?: () => void;
-    onMouseUp?: () => void;
-    onMouseMove?: (e: MouseEvent) => void;
-    onMouseEnter?: () => void;
-    onMouseLeave?: () => void;
+    onClick?: (event: MouseEvent, element: HTML) => void;
+    onMouseDown?: (event: MouseEvent, element: HTML) => void;
+    onMouseUp?: (event: MouseEvent, element: HTML) => void;
+    onMouseMove?: (event: MouseEvent, element: HTML) => void;
+    onMouseEnter?: (event: MouseEvent, element: HTML) => void;
+    onMouseLeave?: (event: MouseEvent, element: HTML) => void;
     children?: HTML[];
 }
 
@@ -35,6 +35,12 @@ export class HTML {
         if (this.options.text) {
             this.setText(this.options.text);
         }
+        if (this.options.transform?.size) {
+            this.setStyle({
+                width: this.options.transform.size.x + 'px',
+                height: this.options.transform.size.y + 'px',
+            });
+        }
         this.setStyle(this.options.style);
         this.transform = new Transform(this.options.transform);
         this.transform.setResponder(({ matrix, position, scale, rotation }) => {
@@ -44,33 +50,33 @@ export class HTML {
         });
 
         if (options.onMouseDown) {
-            this.dom.addEventListener('mousedown', () => {
-                this.options.onMouseDown();
+            this.dom.addEventListener('mousedown', (e) => {
+                this.options.onMouseDown(e, this);
             });
         }
         if (options.onMouseUp) {
-            this.dom.addEventListener('mouseup', () => {
-                this.options.onMouseUp();
+            this.dom.addEventListener('mouseup', (e) => {
+                this.options.onMouseUp(e, this);
             });
         }
         if (options.onClick) {
-            this.dom.addEventListener('click', () => {
-                this.options.onClick();
+            this.dom.addEventListener('click', (e) => {
+                this.options.onClick(e, this);
             });
         }
         if (options.onMouseMove) {
             this.dom.addEventListener('mousemove', (e) => {
-                this.options.onMouseMove(e);
+                this.options.onMouseMove(e, this);
             });
         }
         if (options.onMouseEnter) {
-            this.dom.addEventListener('mouseenter', () => {
-                this.options.onMouseEnter();
+            this.dom.addEventListener('mouseenter', (e) => {
+                this.options.onMouseEnter(e, this);
             });
         }
         if (options.onMouseLeave) {
-            this.dom.addEventListener('mouseleave', () => {
-                this.options.onMouseLeave();
+            this.dom.addEventListener('mouseleave', (e) => {
+                this.options.onMouseLeave(e, this);
             });
         }
         this.setText(this.options.text);
@@ -121,5 +127,10 @@ export class HTML {
     }   
 
     public tick(obj: TRD) {
+        if (this.visible) {
+            this.children.forEach(child => {
+                child.tick(obj);
+            });
+        }
     }
 }

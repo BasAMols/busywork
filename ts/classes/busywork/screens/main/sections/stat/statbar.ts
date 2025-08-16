@@ -3,9 +3,9 @@ import { HTML } from '../../../../../element/element';
 import { Flex } from '../../../../../element/flex';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../../ticker';
-import { TileGame } from '../../../../main';
-import { Section } from '../../../../util/section';
-import { Icon } from './icon';
+import { TileGame } from '../../tilegame';
+import { Icon } from '../../util/icon';
+import { Section } from '../../util/section';
 
 
 export class StatBar extends Section {
@@ -81,6 +81,7 @@ export class StatBar extends Section {
     }
 
     tick(obj: TickerReturnData) {
+        super.tick(obj);
         if (obj.frame % 10 === 0) {
             this.stats.sort((a, b) => a.value - b.value).forEach((stat, index) => {
                 stat.value = stat.getter();

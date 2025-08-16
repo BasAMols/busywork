@@ -57,6 +57,7 @@ export class Walker extends HTML {
     }
 
     public tick(obj: TickerReturnData) {
+        super.tick(obj);
         const angle = this._lookAt ? this._lookAt.sub(this.transform.position).angle() : this.transform.rotation;
 
         if (this._destination && this.transform.position.distance(this._destination) > 10) {

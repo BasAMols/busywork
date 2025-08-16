@@ -1,5 +1,4 @@
 import { Vector2 } from '../../../../../../math/vector2';
-import { TickerReturnData } from '../../../../../../ticker';
 import { Office } from '../office';
 import { Walker } from './walker';
 
@@ -24,7 +23,4 @@ export class Player extends Walker {
         super.setDestination(destination);
     }
 
-    public tick(obj: TickerReturnData) {
-        super.tick(obj);
-    }
 }

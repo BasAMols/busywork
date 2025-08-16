@@ -1,20 +1,21 @@
-import { HTML } from '../element/element';
-import { Flex } from '../element/flex';
-import { Screen } from "../element/screen";
-import { TickerReturnData } from '../ticker';
-import { Busywork } from '../../game';
-import { Computer } from './screens/main/sections/computer/computer';
-import { Keyboard } from './screens/main/sections/keyboard/keyboard';
-import { Office } from './screens/main/sections/office/office';
-import { Vector2 } from '../math/vector2';
-import { StatBar } from './screens/main/sections/stat/statbar';
+import { HTML } from '../../../element/element';
+import { Flex } from '../../../element/flex';
+import { Screen } from "../../../element/screen";
+import { TickerReturnData } from '../../../ticker';
+import { Busywork } from '../../../../game';
+import { Computer } from './sections/computer/computer';
+import { Keyboard } from './sections/keyboard/keyboard';
+import { Office } from './sections/office/office';
+import { Vector2 } from '../../../math/vector2';
+import { StatBar } from './sections/stat/statbar';
+import { Coffee } from './sections/coffee/coffee';
 
 
 export class TileGame extends Screen {
     public office: Office;
     public computer: Computer;
     public keyboard: Keyboard;
-
+    public coffee: Coffee;
     private stateData: {
         [key: string]: {
             value: boolean;
@@ -75,7 +76,7 @@ export class TileGame extends Screen {
         super('test');
 
         const col = this.append(this.getCol(true, true));
-        const row = col.append(this.getRow(false,false));
+        const row = col.append(this.getRow(false, false));
         row.append(this.office = new Office(), true);
         col.append(this.statBar = new StatBar(this));
 
@@ -84,6 +85,8 @@ export class TileGame extends Screen {
         }));
         this.computerCol.append(this.computer = new Computer(this));
         this.computerCol.append(this.keyboard = new Keyboard(this));
+
+        row.append(this.coffee = new Coffee(this));
 
         this.addState('atdesk', false,
             () => {
@@ -129,10 +132,7 @@ export class TileGame extends Screen {
     }
 
     public tick(obj: TickerReturnData) {
-        this.office.tick(obj);
-        this.computer.tick(obj);
-        this.keyboard.tick(obj);
-        this.statBar.tick(obj);
+        super.tick(obj);
         this.syncStates();
     }
 

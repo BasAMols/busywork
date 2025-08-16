@@ -3,8 +3,8 @@ import { Flex } from '../../../../../element/flex';
 import { Ease } from '../../../../../math/easings';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../../ticker';
-import { TileGame } from '../../../../main';
-import { Section } from '../../../../util/section';
+import { TileGame } from '../../tilegame';
+import { Section } from '../../util/section';
 
 export class Computer extends Section {
     textElement: HTML;
@@ -160,6 +160,7 @@ export class Computer extends Section {
     }
 
     tick(obj: TickerReturnData) {
+        super.tick(obj);
         this.scanline.transform.setPosition(new Vector2(0, (obj.total % 4000) / 4000 * 700 - 100));
 
         this.setStyle({

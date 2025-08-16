@@ -1,5 +1,5 @@
-import { Game as Base } from "./base";
-import { TileGame } from './classes/busywork/main';
+import { Game as Base } from "./classes/busywork/base";
+import { TileGame } from './classes/busywork/screens/main/tilegame';
 import { Menu } from './classes/busywork/screens/menu';
 
 export class Busywork extends Base {

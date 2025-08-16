@@ -1,5 +1,6 @@
-import { HTML } from '../../element/element';
-import { Vector2 } from '../../math/vector2';
+import { HTML } from '../../../../element/element';
+import { Vector2 } from '../../../../math/vector2';
+
 
 export class Section extends HTML {
     public constructor(size: Vector2, style: Partial<CSSStyleDeclaration>) {

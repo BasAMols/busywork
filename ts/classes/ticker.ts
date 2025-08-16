@@ -1,4 +1,4 @@
-import { glob } from '../base';
+import { glob } from './busywork/base';
 
 export type TickerReturnData = {
     interval: number, intervalS3: number, intervalS10: number, intervalS20: number, total: number, frameRate: number, frame: number, maxRate: number; 

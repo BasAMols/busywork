@@ -4,7 +4,7 @@ import { Ease } from '../../../../../math/easings';
 import { Utils } from '../../../../../math/util';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../../ticker';
-import { Section } from '../../../../util/section';
+import { Section } from '../../util/section';
 import { Chair, getDesk } from './furniture';
 import { Boss } from './people/boss';
 import { Player } from './people/player';
@@ -17,7 +17,7 @@ import { getPlant } from './prop';
 export class Office extends Section {
     walker: Walker;
     mouse: boolean = false;
-    npc: Boss;
+    npc: Boss;  
     sitter: Sitter;
 
     public readonly blockers: {
@@ -210,9 +210,10 @@ export class Office extends Section {
     }
 
     public tick(obj: TickerReturnData) {
-        this.walker.tick(obj);
-        this.npc.tick(obj);
-        this.sitter.tick(obj);
+
+        
+        super.tick(obj);
+        
         this.tired += obj.interval * 0.000001;
         if (this.walker.transform.position.y > 500 && this.walker.transform.position.x > 500) {
             this.tired += obj.interval * -0.001;

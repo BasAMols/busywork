@@ -1,6 +1,6 @@
-import { HTML } from './classes/element/element';
-import { Screen } from './classes/element/screen';
-import { Ticker, TickerReturnData } from './classes/ticker';
+import { HTML } from '../element/element';
+import { Screen } from '../element/screen';
+import { Ticker, TickerReturnData } from '../ticker';
 
 export var glob = new class {
     public game: Game;

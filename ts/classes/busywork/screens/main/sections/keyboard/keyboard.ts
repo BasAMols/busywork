@@ -2,8 +2,8 @@
 import { Ease } from '../../../../../math/easings';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../../ticker';
-import { TileGame } from '../../../../main';
-import { Section } from '../../../../util/section';
+import { TileGame } from '../../tilegame';
+import { Section } from '../../util/section';
 import { getBigKeyboard } from './asset';
 
 
@@ -35,6 +35,7 @@ export class Keyboard extends Section {
     }
 
     tick(obj: TickerReturnData) {
+        super.tick(obj);
         this.setStyle({
             filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.2)*Math.sin(obj.total*0.001 + 0.2)*this.parent.office.tired)*4}px)`,
         });
