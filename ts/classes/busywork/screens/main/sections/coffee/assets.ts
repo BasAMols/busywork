@@ -9,12 +9,15 @@ export class CoffeeMachine extends HTML {
     coffee2: HTML;
     cupAsset: Cup;
     private _cup: boolean = false;
+    screen: HTML;
     public get cup() {
         return this._cup;
     }
     public set cup(value: boolean) {
         this._cup = value;
         this.cupAsset.visible = value;
+        this.cupAsset.steaming = false;
+
     }
     public click(element: HTML, validation?: () => boolean, add?: () => void) {
         if (!this.cup && (!validation || validation())) {
@@ -23,7 +26,7 @@ export class CoffeeMachine extends HTML {
             add?.();
         }
     };
-    public constructor(position: Vector2) {
+    public constructor(position: Vector2, onDrink: () => void) {
         super({
             style: {
                 filter: 'drop-shadow(3px -9px 20px #00000020)',
@@ -72,15 +75,6 @@ export class CoffeeMachine extends HTML {
             }
         }));
 
-        this.append(this.cupAsset = new Cup({
-            position: new Vector2(90, 180), rotation: 0, scale: new Vector2(1, 1), onClick: () => {
-                if (this.filled >= 1) {
-                    this.filled = 0;
-                    this.filling = false;
-                    this.cup = false;
-                }
-            }
-        }));
 
         // coffee
         this.append(this.coffee1 = new HTML({
@@ -119,6 +113,9 @@ export class CoffeeMachine extends HTML {
                 position: new Vector2(115, 135),
             },
         }));
+
+
+
         this.append(new HTML({
             style: {
                 backgroundColor: '#e4e3e0',
@@ -146,6 +143,18 @@ export class CoffeeMachine extends HTML {
                 position: new Vector2(100, 110),
             },
         }));
+
+        this.append(this.cupAsset = new Cup({
+            position: new Vector2(90, 180), rotation: 0, scale: new Vector2(1, 1), onClick: () => {
+                if (this.filled >= 1) {
+                    this.filled = 0;
+                    this.filling = false;
+                    this.cup = false;
+                    onDrink();
+                }
+            }
+        }));
+
 
         // bottom
         this.append(new HTML({
@@ -178,7 +187,7 @@ export class CoffeeMachine extends HTML {
                 position: new Vector2(0, 0)
             }
         }));
-        this.append(new HTML({
+        this.screen = this.append(new HTML({
             style: {
                 backgroundColor: 'rgb(34, 36, 50)',
                 borderRadius: '7px',
@@ -186,16 +195,23 @@ export class CoffeeMachine extends HTML {
             },
             transform: {
                 anchor: new Vector2(0.5, 0.5),
-                size: new Vector2(120, 50),
+                size: new Vector2(128, 50),
                 rotation: 0,
-                position: new Vector2(70, 40)
-            }
+                position: new Vector2(65, 40)
+            },
+            children: [
+                new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(10 + 1 - 2, 5), }, style: { transition: 'opacity 0.3s', backgroundColor: '#579557cc', borderRadius: '3px' } }),
+                new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(32 + 2 - 2, 5), }, style: { transition: 'opacity 0.3s', backgroundColor: '#579557cc', borderRadius: '3px' } }),
+                new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(54 + 3 - 2, 5), }, style: { transition: 'opacity 0.3s', backgroundColor: '#579557cc', borderRadius: '3px' } }),
+                new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(76 + 4 - 2, 5), }, style: { transition: 'opacity 0.3s', backgroundColor: '#579557cc', borderRadius: '3px' } }),
+                new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(98 + 5 - 2, 5), }, style: { transition: 'opacity 0.3s', backgroundColor: '#579557cc', borderRadius: '3px' } }),
+            ]
         }));
         this.append(new Flex({
             justifyContent: 'center',
             alignItems: 'center',
             style: {
-                backgroundColor: '#d9daff',
+                backgroundColor: '#95bcff',
                 borderRadius: '100%',
                 boxShadow: '0px 0px 10px #00000088, 8px 4px 4px #00000050, inset 6px 3px 20px #00000088',
                 cursor: 'pointer',
@@ -247,7 +263,14 @@ export class CoffeeMachine extends HTML {
             if (this.filled > 1) {
                 this.filling = false;
             }
+
+            if (this.filled > 0.7) {
+                this.cupAsset.steaming = true;
+            }
         }
+        this.screen.children.forEach((c, i) => {
+            c.dom.style.opacity = this.filled > i * 0.2 + 0.1 ? '1' : '0.1';
+        });
     }
 };
 
@@ -273,44 +296,52 @@ export class Cup extends HTML {
         this.steam.push(this.append(new HTML({
             style: {
                 backgroundColor: '#4c201840',
-                filter: 'blur(6px)',
+                filter: 'blur(3px)',
                 borderRadius: '20px',
+                pointerEvents: 'none',
+                transition: 'opacity 1s ease-in-out',
             },
             transform: {
                 anchor: new Vector2(0.5, 0.5),
-                size: new Vector2(10, 80),
-                position: new Vector2(15, -52)
+                size: new Vector2(10, 200),
+                position: new Vector2(15, -100)
             }
         })));
         this.steam.push(this.append(new HTML({
             style: {
                 backgroundColor: '#4c201840',
-                filter: 'blur(6px)',
+                filter: 'blur(3px)',
                 borderRadius: '20px',
+                pointerEvents: 'none',
+                transition: 'opacity 1s ease-in-out',
             },
             transform: {
                 anchor: new Vector2(0.5, 0.5),
-                size: new Vector2(15, 80),
-                position: new Vector2(35, -40)
+                size: new Vector2(15, 200),
+                position: new Vector2(35, -110)
             }
         })));
         this.steam.push(this.append(new HTML({
             style: {
                 backgroundColor: '#4c201840',
-                filter: 'blur(6px)',
+                filter: 'blur(3px)',
                 borderRadius: '20px',
+                pointerEvents: 'none',
+                transition: 'opacity 1s ease-in-out',
             },
             transform: {
                 anchor: new Vector2(0.5, 0.5),
-                size: new Vector2(10, 80),
-                position: new Vector2(55, -55)
+                size: new Vector2(10, 200),
+                position: new Vector2(55, -90)
             }
         })));
         this.steam.push(this.append(new HTML({
             style: {
                 backgroundColor: '#4c201820',
-                filter: 'blur(6px)',
+                filter: 'blur(3px)',
                 borderRadius: '20px',
+                pointerEvents: 'none',
+                transition: 'opacity 1s ease-in-out',
             },
             transform: {
                 anchor: new Vector2(0.5, 0.5),
@@ -352,7 +383,7 @@ export class Cup extends HTML {
     private _steaming: boolean = false;
     set steaming(value: boolean) {
         this.steam.forEach(s => {
-            s.visible = value;
+            s.dom.style.opacity = value ? '1' : '0';
         });
         this._steaming = value;
     }

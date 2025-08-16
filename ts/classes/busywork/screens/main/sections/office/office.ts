@@ -72,10 +72,6 @@ export class Office extends Section {
             position: new Vector2(590, 30),
             size: new Vector2(80, 80),
         },
-        {
-            position: new Vector2(590, 490),
-            size: new Vector2(80, 80),
-        },
         
     ];
     chair: Chair;

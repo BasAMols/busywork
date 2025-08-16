@@ -104,18 +104,29 @@ export class TileGame extends Screen {
                     this.office.walker.setDestination(undefined);
                     this.office.walker.transform.setPosition(new Vector2(280, 160));
                 }
-            });
+            }
+        );
+        this.addState('atcoffeemachine', false,
+            () => {
+                console.log(this.office.walker.transform.position.distance(new Vector2(650, 550)));
+                
+                return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 &&
+                    (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
+            },
+            (value) => {
+                this.coffee.dom.style.width = value ? '400px' : '0px';
+            }
+        );
         this.addState('bossinroom', false,
             () => {
                 return this.office.npc.time > 1500 && this.office.npc.time < 27000;
-            }, (value) => {
             }
         );
         this.addState('bosslooking', false,
             () => {
                 return this.office.npc.time > 21000 && this.office.npc.time < 24000;
-            }, (value) => {
-            });
+            }
+        );
     }
 
 

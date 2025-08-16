@@ -1615,10 +1615,6 @@ var Office = class extends Section {
       {
         position: new Vector2(590, 30),
         size: new Vector2(80, 80)
-      },
-      {
-        position: new Vector2(590, 490),
-        size: new Vector2(80, 80)
       }
     ];
     this._tired = 0;
@@ -1842,7 +1838,7 @@ var StatBar = class _StatBar extends Section {
 
 // ts/classes/busywork/screens/main/sections/coffee/assets.ts
 var CoffeeMachine = class extends HTML {
-  constructor(position) {
+  constructor(position, onDrink) {
     super({
       style: {
         filter: "drop-shadow(3px -9px 20px #00000020)"
@@ -1898,18 +1894,6 @@ var CoffeeMachine = class extends HTML {
         size: new Vector2(230, 250),
         rotation: 0,
         position: new Vector2(20, 20)
-      }
-    }));
-    this.append(this.cupAsset = new Cup({
-      position: new Vector2(90, 180),
-      rotation: 0,
-      scale: new Vector2(1, 1),
-      onClick: () => {
-        if (this.filled >= 1) {
-          this.filled = 0;
-          this.filling = false;
-          this.cup = false;
-        }
       }
     }));
     this.append(this.coffee1 = new HTML({
@@ -1971,6 +1955,19 @@ var CoffeeMachine = class extends HTML {
         position: new Vector2(100, 110)
       }
     }));
+    this.append(this.cupAsset = new Cup({
+      position: new Vector2(90, 180),
+      rotation: 0,
+      scale: new Vector2(1, 1),
+      onClick: () => {
+        if (this.filled >= 1) {
+          this.filled = 0;
+          this.filling = false;
+          this.cup = false;
+          onDrink();
+        }
+      }
+    }));
     this.append(new HTML({
       style: {
         backgroundColor: "#504f5a",
@@ -1997,7 +1994,7 @@ var CoffeeMachine = class extends HTML {
         position: new Vector2(0, 0)
       }
     }));
-    this.append(new HTML({
+    this.screen = this.append(new HTML({
       style: {
         backgroundColor: "rgb(34, 36, 50)",
         borderRadius: "7px",
@@ -2005,16 +2002,23 @@ var CoffeeMachine = class extends HTML {
       },
       transform: {
         anchor: new Vector2(0.5, 0.5),
-        size: new Vector2(120, 50),
+        size: new Vector2(128, 50),
         rotation: 0,
-        position: new Vector2(70, 40)
-      }
+        position: new Vector2(65, 40)
+      },
+      children: [
+        new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(10 + 1 - 2, 5) }, style: { transition: "opacity 0.3s", backgroundColor: "#579557cc", borderRadius: "3px" } }),
+        new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(32 + 2 - 2, 5) }, style: { transition: "opacity 0.3s", backgroundColor: "#579557cc", borderRadius: "3px" } }),
+        new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(54 + 3 - 2, 5) }, style: { transition: "opacity 0.3s", backgroundColor: "#579557cc", borderRadius: "3px" } }),
+        new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(76 + 4 - 2, 5) }, style: { transition: "opacity 0.3s", backgroundColor: "#579557cc", borderRadius: "3px" } }),
+        new HTML({ transform: { size: new Vector2(18, 40), position: new Vector2(98 + 5 - 2, 5) }, style: { transition: "opacity 0.3s", backgroundColor: "#579557cc", borderRadius: "3px" } })
+      ]
     }));
     this.append(new Flex({
       justifyContent: "center",
       alignItems: "center",
       style: {
-        backgroundColor: "#d9daff",
+        backgroundColor: "#95bcff",
         borderRadius: "100%",
         boxShadow: "0px 0px 10px #00000088, 8px 4px 4px #00000050, inset 6px 3px 20px #00000088",
         cursor: "pointer",
@@ -2050,6 +2054,7 @@ var CoffeeMachine = class extends HTML {
   set cup(value) {
     this._cup = value;
     this.cupAsset.visible = value;
+    this.cupAsset.steaming = false;
   }
   click(element, validation, add) {
     if (!this.cup && (!validation || validation())) {
@@ -2073,7 +2078,13 @@ var CoffeeMachine = class extends HTML {
       if (this.filled > 1) {
         this.filling = false;
       }
+      if (this.filled > 0.7) {
+        this.cupAsset.steaming = true;
+      }
     }
+    this.screen.children.forEach((c, i) => {
+      c.dom.style.opacity = this.filled > i * 0.2 + 0.1 ? "1" : "0.1";
+    });
   }
 };
 var Cup = class extends HTML {
@@ -2096,44 +2107,52 @@ var Cup = class extends HTML {
     this.steam.push(this.append(new HTML({
       style: {
         backgroundColor: "#4c201840",
-        filter: "blur(6px)",
-        borderRadius: "20px"
+        filter: "blur(3px)",
+        borderRadius: "20px",
+        pointerEvents: "none",
+        transition: "opacity 1s ease-in-out"
       },
       transform: {
         anchor: new Vector2(0.5, 0.5),
-        size: new Vector2(10, 80),
-        position: new Vector2(15, -52)
+        size: new Vector2(10, 200),
+        position: new Vector2(15, -100)
       }
     })));
     this.steam.push(this.append(new HTML({
       style: {
         backgroundColor: "#4c201840",
-        filter: "blur(6px)",
-        borderRadius: "20px"
+        filter: "blur(3px)",
+        borderRadius: "20px",
+        pointerEvents: "none",
+        transition: "opacity 1s ease-in-out"
       },
       transform: {
         anchor: new Vector2(0.5, 0.5),
-        size: new Vector2(15, 80),
-        position: new Vector2(35, -40)
+        size: new Vector2(15, 200),
+        position: new Vector2(35, -110)
       }
     })));
     this.steam.push(this.append(new HTML({
       style: {
         backgroundColor: "#4c201840",
-        filter: "blur(6px)",
-        borderRadius: "20px"
+        filter: "blur(3px)",
+        borderRadius: "20px",
+        pointerEvents: "none",
+        transition: "opacity 1s ease-in-out"
       },
       transform: {
         anchor: new Vector2(0.5, 0.5),
-        size: new Vector2(10, 80),
-        position: new Vector2(55, -55)
+        size: new Vector2(10, 200),
+        position: new Vector2(55, -90)
       }
     })));
     this.steam.push(this.append(new HTML({
       style: {
         backgroundColor: "#4c201820",
-        filter: "blur(6px)",
-        borderRadius: "20px"
+        filter: "blur(3px)",
+        borderRadius: "20px",
+        pointerEvents: "none",
+        transition: "opacity 1s ease-in-out"
       },
       transform: {
         anchor: new Vector2(0.5, 0.5),
@@ -2170,7 +2189,7 @@ var Cup = class extends HTML {
   }
   set steaming(value) {
     this.steam.forEach((s) => {
-      s.visible = value;
+      s.dom.style.opacity = value ? "1" : "0";
     });
     this._steaming = value;
   }
@@ -2251,7 +2270,9 @@ var Coffee = class extends Section {
         transform: {}
       }
     }));
-    this.append(new CoffeeMachine(new Vector2(55, 240)));
+    this.append(new CoffeeMachine(new Vector2(55, 240), () => {
+      this.parent.office.tired = 0;
+    }));
   }
 };
 
@@ -2291,12 +2312,21 @@ var TileGame = class extends Screen {
       }
     );
     this.addState(
+      "atcoffeemachine",
+      false,
+      () => {
+        console.log(this.office.walker.transform.position.distance(new Vector2(650, 550)));
+        return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
+      },
+      (value) => {
+        this.coffee.dom.style.width = value ? "400px" : "0px";
+      }
+    );
+    this.addState(
       "bossinroom",
       false,
       () => {
         return this.office.npc.time > 1500 && this.office.npc.time < 27e3;
-      },
-      (value) => {
       }
     );
     this.addState(
@@ -2304,8 +2334,6 @@ var TileGame = class extends Screen {
       false,
       () => {
         return this.office.npc.time > 21e3 && this.office.npc.time < 24e3;
-      },
-      (value) => {
       }
     );
   }

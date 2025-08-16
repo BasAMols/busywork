@@ -12,7 +12,6 @@ export class Coffee extends Section {
             boxShadow: '0px 0px 200px #0000004a',
             transition: 'width 0.6s ease-in-out',
         });
-
         
         this.append(new Tile({
             tileSize: new Vector2(80, 120),
@@ -73,7 +72,9 @@ export class Coffee extends Section {
                 }
             }
         }));
-        this.append(new CoffeeMachine(new Vector2(55, 240)));
+        this.append(new CoffeeMachine(new Vector2(55, 240), () => {
+            this.parent.office.tired = 0;
+        }));
     }
 
 }
