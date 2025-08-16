@@ -140,20 +140,22 @@ export class Office extends Section {
         wrap.append(getDesk(new Vector2(140, 15), -1, 1, {
         }));
 
-        this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: 'none' }, this.chair);
+        this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: 'none', armPosition: [0, 0] }, this.chair);
         wrap.append(this.sitter);
 
-        wrap.append(new Chair(new Vector2(480, 200), 120, {
-            filter: 'saturate(0.4)',
-        }));
+  
 
-        wrap.append(new Chair(new Vector2(100, 400), 264, {
+        wrap.append(new Chair(new Vector2(130, 390), 270, {
             filter: 'saturate(0.4)',
         }));
 
         this.walker = new Player(this);
         wrap.append(this.walker);
 
+        
+        const c = wrap.append(new Chair(new Vector2(480, 200), 120, {
+            filter: 'saturate(0.4)',
+        })) as Chair;
 
         wrap.append(getDesk(new Vector2(470, 220), 90, 1, {
             filter: 'saturate(0.4)',
@@ -169,6 +171,10 @@ export class Office extends Section {
         wrap.append(getCoffeeMachine(new Vector2(590, 490), 40, 9, 40));
 
 
+        wrap.append(new Sitter({ initialPosition: new Vector2(520, 240), hair: 'full', initialRotation: 120, armPosition: [0, 0], }) as Sitter);
+        wrap.append(new Sitter({ initialPosition: new Vector2(170, 430), hair: 'none', initialRotation: -90, armPosition: [1, 0] }) as Sitter);
+
+
         this.npc = new Boss(new Vector2(350, 700), 0, 'half');
         wrap.append(this.npc);
 
@@ -179,8 +185,6 @@ export class Office extends Section {
                 cursor: 'pointer',
             }
         }));
-
-        console.log(this.overlay);
 
         this.overlay.dom.addEventListener('mousedown', (e) => {
             this.mouse = true;

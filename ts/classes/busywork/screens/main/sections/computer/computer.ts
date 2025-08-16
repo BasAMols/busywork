@@ -182,9 +182,9 @@ export class Computer extends Section {
                 this.completed++;
 
                 setTimeout(() => {
-                    const code = Array.from({ length: 6 }, () => Math.floor(Math.random() * 6).toString()).join('');
+                    const code = Array.from({ length: 5 }, () => Math.floor(Math.random() * 6).toString()).join('');
                     this.setCode(code);
-                    this.setTT('______');
+                    this.setTT('_____');
                 }, 1000);
             } else {
                 this.screen.setStyle({

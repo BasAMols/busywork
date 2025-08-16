@@ -758,9 +758,9 @@ var Computer = class extends Section {
         this.setCode(void 0);
         this.completed++;
         setTimeout(() => {
-          const code = Array.from({ length: 6 }, () => Math.floor(Math.random() * 6).toString()).join("");
+          const code = Array.from({ length: 5 }, () => Math.floor(Math.random() * 6).toString()).join("");
           this.setCode(code);
-          this.setTT("______");
+          this.setTT("_____");
         }, 1e3);
       } else {
         this.screen.setStyle({
@@ -1635,13 +1635,18 @@ var Sitter = class extends Walker {
     this.chair = chair;
     this._seated = false;
     this.interpolatedValue = 0;
+    this.person.armPosition = obj.armPosition || [1, 1];
     this.data = {
       initialPosition: obj.initialPosition || new Vector2(0, 0),
       initialRotation: obj.initialRotation || 0
     };
-    this.transform.setParent(this.chair.seat.transform);
+    if (this.chair) {
+      this.transform.setParent(this.chair.seat.transform);
+    } else {
+      this.transform.setPosition(this.data.initialPosition);
+      this.transform.setRotation(this.data.initialRotation);
+    }
     this.person.legCycle = 0.5;
-    this.person.armPosition = [1, 1];
     this.person.armTwist = [0.5, -0.5];
     this.person.arms[0].setStyle({
       // transition: 'transform 0.1s ease-in-out',
@@ -1664,14 +1669,16 @@ var Sitter = class extends Walker {
   }
   tick(obj) {
     super.tick(obj);
-    this.interpolatedValue = this.interpolatedValue + Math.min(0.02, Number(this.seated) - this.interpolatedValue);
-    this.person.armPosition = [this.interpolatedValue, this.interpolatedValue];
-    this.person.arms[0].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
-    this.person.arms[1].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
-    this.chair.seat.transform.setRotation(this.seated ? -1 : 70);
-    this.chair.setPosition(this.seated ? new Vector2(240, 130) : new Vector2(240, 140));
-    this.transform.setPosition(this.chair.seat.transform.absolute.position.add(this.data.initialPosition));
-    this.transform.setRotation(this.chair.seat.transform.absolute.rotation + this.data.initialRotation);
+    if (this.chair) {
+      this.interpolatedValue = this.interpolatedValue + Math.min(0.02, Number(this.seated) - this.interpolatedValue);
+      this.person.armPosition = [this.interpolatedValue, this.interpolatedValue];
+      this.person.arms[0].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
+      this.person.arms[1].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
+      this.chair.seat.transform.setRotation(this.seated ? -1 : 70);
+      this.chair.setPosition(this.seated ? new Vector2(240, 130) : new Vector2(240, 140));
+      this.transform.setPosition(this.chair.seat.transform.absolute.position.add(this.data.initialPosition));
+      this.transform.setRotation(this.chair.seat.transform.absolute.rotation + this.data.initialRotation);
+    }
   }
 };
 
@@ -1784,16 +1791,16 @@ var Office = class extends Section {
     }));
     wrap.append(this.chair = new Chair(new Vector2(240, 130), -1));
     wrap.append(getDesk(new Vector2(140, 15), -1, 1, {}));
-    this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: "none" }, this.chair);
+    this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: "none", armPosition: [0, 0] }, this.chair);
     wrap.append(this.sitter);
-    wrap.append(new Chair(new Vector2(480, 200), 120, {
-      filter: "saturate(0.4)"
-    }));
-    wrap.append(new Chair(new Vector2(100, 400), 264, {
+    wrap.append(new Chair(new Vector2(130, 390), 270, {
       filter: "saturate(0.4)"
     }));
     this.walker = new Player(this);
     wrap.append(this.walker);
+    const c = wrap.append(new Chair(new Vector2(480, 200), 120, {
+      filter: "saturate(0.4)"
+    }));
     wrap.append(getDesk(new Vector2(470, 220), 90, 1, {
       filter: "saturate(0.4)"
     }));
@@ -1803,6 +1810,8 @@ var Office = class extends Section {
     wrap.append(getPlant(new Vector2(30, 30), 0, 6, 80));
     wrap.append(getPlant(new Vector2(590, 30), 40, 7, 50));
     wrap.append(getCoffeeMachine(new Vector2(590, 490), 40, 9, 40));
+    wrap.append(new Sitter({ initialPosition: new Vector2(520, 240), hair: "full", initialRotation: 120, armPosition: [0, 0] }));
+    wrap.append(new Sitter({ initialPosition: new Vector2(170, 430), hair: "none", initialRotation: -90, armPosition: [1, 0] }));
     this.npc = new Boss(new Vector2(350, 700), 0, "half");
     wrap.append(this.npc);
     this.overlay = this.append(new HTML({
@@ -1812,7 +1821,6 @@ var Office = class extends Section {
         cursor: "pointer"
       }
     }));
-    console.log(this.overlay);
     this.overlay.dom.addEventListener("mousedown", (e) => {
       this.mouse = true;
       this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
