@@ -26,14 +26,6 @@ export class Computer extends Section {
             overflow: 'hidden',
         }, gridParams);
 
-        if (Utils.isMobile()) {
-            this.dom.style.width = '450px';
-            this.dom.style.height = '100%';
-        } else {
-            this.dom.style.width = '100%';
-            this.dom.style.height = '350px';
-        }
-
 
         this.screen = this.append(new HTML({
             style: {
@@ -239,5 +231,18 @@ export class Computer extends Section {
                 filter: `blur(0px)`,
             });
         }
+    }
+
+    updateGrid(gridParams: [number, number, number, number]) {
+        super.updateGrid(gridParams);
+
+        if (Utils.isMobile()) {
+            this.dom.style.width = '450px';
+            this.dom.style.height = '100%';
+        } else {
+            this.dom.style.width = '100%';
+            this.dom.style.height = '350px';
+        }
+
     }
 }

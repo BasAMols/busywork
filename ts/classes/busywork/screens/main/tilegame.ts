@@ -125,9 +125,38 @@ export class TileGame extends Screen {
         return this.stateData[state]?.value;
     }
 
-    updateGridSize() {
+    private _mobile: boolean = false;
 
-        if (Utils.isMobile()) {
+    updateGridSize(force: boolean = false) {
+
+        if (this._mobile !== Utils.isMobile() || force) {
+            this._mobile = Utils.isMobile();
+            if (this._mobile) {
+
+                this.debug.updateGrid([1, 1, 1, 1]);
+                this.computer.updateGrid([1, 1, 3, 1]);
+                this.keyboard.updateGrid([1, 1, 5, 1]);
+                this.office.updateGrid([1, 1, 7, 1]);
+                this.coffee.updateGrid([1, 1, 11, 1]);
+                this.statBar.updateGrid([1, 1, 9, 1]);
+                this.gridManager.setColumns([700]);
+                this.gridManager.setRows([0, 350, 230, 600, 1, 600]);
+
+            } else {
+
+                this.coffee.updateGrid([5, 1, 3, 3]);
+                this.computer.updateGrid([1, 1, 3, 1]);
+                this.keyboard.updateGrid([1, 1, 5, 1]);
+                this.debug.updateGrid([1, 5, 1, 1]);
+                this.office.updateGrid([3, 1, 3, 3]);
+                this.statBar.updateGrid([3, 1, 7, 1]);
+                this.gridManager.setColumns([450, 700, 450]);
+                this.gridManager.setRows([0, 350, 230, 1]);
+            }
+    
+        }
+
+        if (this._mobile) {
             this.gridManager.setColumn(0, this.state('atdesk') || this.state('atcoffeemachine') ? 450 : 700);
             this.gridManager.setRow(1, this.state('atdesk') ? 350 : 0);
             this.gridManager.setRow(2, this.state('atdesk') ? 230 : 0);
@@ -170,23 +199,15 @@ export class TileGame extends Screen {
             }
         }), true);
 
-        if (Utils.isMobile()) {
-            this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
-            this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-            this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-            this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
-            this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
-            this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
-            this.gridManager = new GridManager(this.grid, [700], [0, 350, 230, 600, 1, 600], 20);
-        } else {
-            this.grid.append(this.coffee = new Coffee(this, [5, 1, 3, 3]));
-            this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-            this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-            this.grid.append(this.debug = new Debug(this, [1, 5, 1, 1]));
-            this.grid.append(this.office = new Office([3, 1, 3, 3]), true);
-            this.grid.append(this.statBar = new StatBar(this, [3, 1, 7, 1]));
-            this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
-        }
+        this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
+        this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+        this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+        this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
+        this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
+        this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
+        this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
+
+        this.updateGridSize(true);
 
 
         glob.debug = this.debug;

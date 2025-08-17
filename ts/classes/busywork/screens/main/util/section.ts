@@ -23,4 +23,9 @@ export class Section extends HTML {
             },
         });
     }
+
+    updateGrid(gridParams: [number, number, number, number]) {
+        this.dom.style.gridColumn = gridParams[0] + ' / span ' + gridParams[1];
+        this.dom.style.gridRow = gridParams[2] + ' / span ' + gridParams[3];
+    }
 }

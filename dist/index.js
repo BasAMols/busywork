@@ -683,6 +683,10 @@ var Section = class extends HTML {
       }
     });
   }
+  updateGrid(gridParams) {
+    this.dom.style.gridColumn = gridParams[0] + " / span " + gridParams[1];
+    this.dom.style.gridRow = gridParams[2] + " / span " + gridParams[3];
+  }
 };
 
 // ts/classes/busywork/screens/main/sections/computer/computer.ts
@@ -701,13 +705,6 @@ var Computer = class extends Section {
     this._code = void 0;
     this._completed = 0;
     this.target = 3;
-    if (Utils.isMobile()) {
-      this.dom.style.width = "450px";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "350px";
-    }
     this.screen = this.append(new HTML({
       style: {
         width: "440px",
@@ -888,6 +885,16 @@ var Computer = class extends Section {
       });
     }
   }
+  updateGrid(gridParams) {
+    super.updateGrid(gridParams);
+    if (Utils.isMobile()) {
+      this.dom.style.width = "450px";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "350px";
+    }
+  }
 };
 
 // ts/classes/element/button.ts
@@ -973,13 +980,6 @@ var Keyboard = class extends Section {
       overflow: "hidden"
     }, gridParams);
     this.parent = parent;
-    if (Utils.isMobile()) {
-      this.dom.style.width = "450px";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "230px";
-    }
     this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
       this.computer.addTT(key.toString());
       if (key === 0 || key === 3) {
@@ -1009,6 +1009,16 @@ var Keyboard = class extends Section {
       this.setStyle({
         filter: "blur(0px)"
       });
+    }
+  }
+  updateGrid(gridParams) {
+    super.updateGrid(gridParams);
+    if (Utils.isMobile()) {
+      this.dom.style.width = "450px";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "230px";
     }
   }
 };
@@ -1892,13 +1902,6 @@ var Office = class extends Section {
       }
     ];
     this._tired = 0;
-    if (Utils.isMobile()) {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "600px";
-    }
     const wrap = this.append(new HTML({
       style: {
         width: "700px",
@@ -2022,6 +2025,16 @@ var Office = class extends Section {
           backgroundColor: "rgba(0, 0, 0, 0)"
         });
       }
+    }
+  }
+  updateGrid(gridParams) {
+    super.updateGrid(gridParams);
+    if (Utils.isMobile()) {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "600px";
     }
   }
 };
@@ -2517,13 +2530,6 @@ var Coffee = class extends Section {
       justifyContent: "flex-start"
     }, gridParams);
     this.parent = parent;
-    if (Utils.isMobile()) {
-      this.dom.style.width = "450px";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "600px";
-    }
     this.append(new Tile({
       tileSize: new Vector2(80, 120),
       transform: {
@@ -2582,6 +2588,16 @@ var Coffee = class extends Section {
     this.append(new CoffeeMachine(new Vector2(55, 240), () => {
       this.parent.office.tired = 0;
     }));
+  }
+  updateGrid(gridParams) {
+    super.updateGrid(gridParams);
+    if (Utils.isMobile()) {
+      this.dom.style.width = "450px";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "600px";
+    }
   }
 };
 
@@ -2712,6 +2728,7 @@ var TileGame = class extends Screen {
     this.game = game;
     this.maxSize = new Vector2(1170, 620);
     this.stateData = {};
+    this._mobile = false;
     this.append(this.grid = new Grid({
       justifyContent: "center",
       alignItems: "center",
@@ -2726,23 +2743,14 @@ var TileGame = class extends Screen {
         anchor: new Vector2(0.5, 0.5)
       }
     }), true);
-    if (Utils.isMobile()) {
-      this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
-      this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-      this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-      this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
-      this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
-      this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
-      this.gridManager = new GridManager(this.grid, [700], [0, 350, 230, 600, 1, 600], 20);
-    } else {
-      this.grid.append(this.coffee = new Coffee(this, [5, 1, 3, 3]));
-      this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-      this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-      this.grid.append(this.debug = new Debug(this, [1, 5, 1, 1]));
-      this.grid.append(this.office = new Office([3, 1, 3, 3]), true);
-      this.grid.append(this.statBar = new StatBar(this, [3, 1, 7, 1]));
-      this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
-    }
+    this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
+    this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+    this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+    this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
+    this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
+    this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
+    this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
+    this.updateGridSize(true);
     glob.debug = this.debug;
     window.addEventListener("resize", () => {
       this.updateScale();
@@ -2801,8 +2809,30 @@ var TileGame = class extends Screen {
     var _a;
     return (_a = this.stateData[state]) == null ? void 0 : _a.value;
   }
-  updateGridSize() {
-    if (Utils.isMobile()) {
+  updateGridSize(force = false) {
+    if (this._mobile !== Utils.isMobile() || force) {
+      this._mobile = Utils.isMobile();
+      if (this._mobile) {
+        this.debug.updateGrid([1, 1, 1, 1]);
+        this.computer.updateGrid([1, 1, 3, 1]);
+        this.keyboard.updateGrid([1, 1, 5, 1]);
+        this.office.updateGrid([1, 1, 7, 1]);
+        this.coffee.updateGrid([1, 1, 11, 1]);
+        this.statBar.updateGrid([1, 1, 9, 1]);
+        this.gridManager.setColumns([700]);
+        this.gridManager.setRows([0, 350, 230, 600, 1, 600]);
+      } else {
+        this.coffee.updateGrid([5, 1, 3, 3]);
+        this.computer.updateGrid([1, 1, 3, 1]);
+        this.keyboard.updateGrid([1, 1, 5, 1]);
+        this.debug.updateGrid([1, 5, 1, 1]);
+        this.office.updateGrid([3, 1, 3, 3]);
+        this.statBar.updateGrid([3, 1, 7, 1]);
+        this.gridManager.setColumns([450, 700, 450]);
+        this.gridManager.setRows([0, 350, 230, 1]);
+      }
+    }
+    if (this._mobile) {
       this.gridManager.setColumn(0, this.state("atdesk") || this.state("atcoffeemachine") ? 450 : 700);
       this.gridManager.setRow(1, this.state("atdesk") ? 350 : 0);
       this.gridManager.setRow(2, this.state("atdesk") ? 230 : 0);

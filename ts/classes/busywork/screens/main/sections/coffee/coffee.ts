@@ -15,14 +15,6 @@ export class Coffee extends Section {
         }, gridParams);
 
 
-        if (Utils.isMobile()) {
-            this.dom.style.width = '450px';
-            this.dom.style.height = '100%';
-        } else {
-            this.dom.style.width = '100%';
-            this.dom.style.height = '600px';
-        }
-
         
         this.append(new Tile({
             tileSize: new Vector2(80, 120),
@@ -86,6 +78,18 @@ export class Coffee extends Section {
         this.append(new CoffeeMachine(new Vector2(55, 240), () => {
             this.parent.office.tired = 0;
         }));
+    }
+
+    updateGrid(gridParams: [number, number, number, number]) {
+        super.updateGrid(gridParams);
+
+        if (Utils.isMobile()) {
+            this.dom.style.width = '450px';
+            this.dom.style.height = '100%';
+        } else {
+            this.dom.style.width = '100%';
+            this.dom.style.height = '600px';
+        }
     }
 
 }
