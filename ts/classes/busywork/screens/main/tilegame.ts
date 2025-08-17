@@ -155,7 +155,7 @@ export class TileGame extends Screen {
                 this.office.updateGrid([1, 1, 7, 1]);
                 this.gameover.updateGrid([1, 1, 7, 1]);
                 this.coffee.updateGrid([1, 1, 11, 1]);
-                this.statBar.updateGrid([1, 1, 7, 1]);
+                this.statBar.updateGrid([1, 1, 9, 1]);
                 this.gridManager.setColumns([700]);
                 this.gridManager.setRows([0, 350, 230, 600, 1, 600]);
 

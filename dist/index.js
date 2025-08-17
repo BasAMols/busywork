@@ -2766,7 +2766,7 @@ var Gameover = class extends Section {
         fontWeight: "500",
         textShadow: "0px 0px 10px black",
         lineHeight: "100px",
-        fontSize: "90px",
+        fontSize: "85px",
         color: "#fff",
         position: "relative"
       },
@@ -2976,7 +2976,7 @@ var TileGame = class extends Screen {
         this.office.updateGrid([1, 1, 7, 1]);
         this.gameover.updateGrid([1, 1, 7, 1]);
         this.coffee.updateGrid([1, 1, 11, 1]);
-        this.statBar.updateGrid([1, 1, 7, 1]);
+        this.statBar.updateGrid([1, 1, 9, 1]);
         this.gridManager.setColumns([700]);
         this.gridManager.setRows([0, 350, 230, 600, 1, 600]);
       } else {

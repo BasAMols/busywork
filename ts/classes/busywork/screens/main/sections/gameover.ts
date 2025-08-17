@@ -35,7 +35,7 @@ export class Gameover extends Section {
                 fontWeight: '500',
                 textShadow: '0px 0px 10px black',
                 lineHeight: '100px',
-                fontSize: '90px',
+                fontSize: '85px',
                 color: '#fff',
                 position: 'relative',
             },
