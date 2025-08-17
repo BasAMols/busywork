@@ -8,6 +8,7 @@ import { Section } from '../util/section';
 export class Gameover extends Section {
     text1: HTML;
     text2: HTML;
+    button: HTML;
 
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(700, 20), {
@@ -54,7 +55,7 @@ export class Gameover extends Section {
                 marginLeft: '20px',
             },
         }));
-        this.append(new HTML({
+        this.append(this.button = new HTML({
             style: {
                 width: '100%',
                 fontFamily: 'Noto Sans',
@@ -64,18 +65,19 @@ export class Gameover extends Section {
                 color: 'rgb(209 208 255)',
                 position: 'relative',
                 lineHeight: '30px',
-                pointerEvents: 'auto',
+                pointerEvents: 'none',
                 marginLeft: '20px',
                 cursor: 'pointer',
             },
             text: 'Retry?',
-            onMouseDown: () => {
+            onMouseDown: (e, element) => {
                 window.location.reload();
             },
         }));
 
         this.opacity = 0;
         this.text1.setText('GAME OVER');
+
     }
 
     public trigger() {
@@ -85,6 +87,7 @@ export class Gameover extends Section {
         this.parent.addState('atcoffeemachine', false);
         this.parent.updateGridSize(true);
         this.text2.setText(`${this.parent.office.npc.collected} report${this.parent.office.npc.collected === 1 ? '' : 's'} completed`);
+        this.button.dom.style.pointerEvents = 'auto';
     }
 
     public tick(obj: TickerReturnData) {

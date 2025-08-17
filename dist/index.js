@@ -2786,7 +2786,7 @@ var Gameover = class extends Section {
         marginLeft: "20px"
       }
     }));
-    this.append(new HTML({
+    this.append(this.button = new HTML({
       style: {
         width: "100%",
         fontFamily: "Noto Sans",
@@ -2796,12 +2796,12 @@ var Gameover = class extends Section {
         color: "rgb(209 208 255)",
         position: "relative",
         lineHeight: "30px",
-        pointerEvents: "auto",
+        pointerEvents: "none",
         marginLeft: "20px",
         cursor: "pointer"
       },
       text: "Retry?",
-      onMouseDown: () => {
+      onMouseDown: (e, element) => {
         window.location.reload();
       }
     }));
@@ -2815,6 +2815,7 @@ var Gameover = class extends Section {
     this.parent.addState("atcoffeemachine", false);
     this.parent.updateGridSize(true);
     this.text2.setText("".concat(this.parent.office.npc.collected, " report").concat(this.parent.office.npc.collected === 1 ? "" : "s", " completed"));
+    this.button.dom.style.pointerEvents = "auto";
   }
   tick(obj) {
     if (this.parent.getState("gameover")) {
