@@ -73,6 +73,7 @@ export class StatBar extends Section {
                 transition: 'margin-top 0.5s ease-in-out, opacity 0.5s ease-in-out, width 0.5s 0.5s ease-in-out',
                 position: 'relative',
                 overflow: 'hidden',
+                opacity: '0',
             },
             children: [
                 new Icon(icon, size),

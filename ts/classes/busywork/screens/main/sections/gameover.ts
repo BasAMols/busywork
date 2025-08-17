@@ -51,6 +51,26 @@ export class Gameover extends Section {
                 color: '#fff',
                 position: 'relative',
                 lineHeight: '50px',
+                marginLeft: '20px',
+            },
+        }));
+        this.append(new HTML({
+            style: {
+                width: '100%',
+                fontFamily: 'Noto Sans',
+                fontWeight: '500',
+                textShadow: '0px 0px 10px black',
+                fontSize: '20px',
+                color: 'rgb(209 208 255)',
+                position: 'relative',
+                lineHeight: '30px',
+                pointerEvents: 'auto',
+                marginLeft: '20px',
+                cursor: 'pointer',
+            },
+            text: 'Retry?',
+            onMouseDown: () => {
+                window.location.reload();
             },
         }));
 
