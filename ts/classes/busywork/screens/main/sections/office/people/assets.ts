@@ -231,6 +231,7 @@ export function getPerson(position: Vector2, rotation: number, arms: boolean = t
                     height: '20px',
                     backgroundColor: '#f9d9ba',
                     borderRadius: '50% 50% 2px 2px',
+                    zIndex: '-1',
                 },
             }));
         }

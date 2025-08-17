@@ -3,7 +3,7 @@ import { Tile } from '../../../../../element/tile';
 import { Ease } from '../../../../../math/easings';
 import { Utils } from '../../../../../math/util';
 import { Vector2 } from '../../../../../math/vector2';
-import { TickerReturnData } from '../../../../../ticker';
+import { TickerReturnData } from '../../../../ticker';
 import { Section } from '../../util/section';
 import { Chair, getDesk } from './furniture';
 import { Boss } from './people/boss';

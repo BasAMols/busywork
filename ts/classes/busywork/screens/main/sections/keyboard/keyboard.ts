@@ -1,7 +1,7 @@
 
 import { Ease } from '../../../../../math/easings';
 import { Vector2 } from '../../../../../math/vector2';
-import { TickerReturnData } from '../../../../../ticker';
+import { TickerReturnData } from '../../../../ticker';
 import { TileGame } from '../../tilegame';
 import { Section } from '../../util/section';
 import { getBigKeyboard } from './asset';

@@ -1,8 +1,9 @@
 import { HTML } from '../../../../../../element/element';
 import { Utils } from '../../../../../../math/util';
 import { Vector2 } from '../../../../../../math/vector2';
-import { TickerReturnData } from '../../../../../../ticker';
-import { Person } from './person';
+import { glob } from '../../../../../base';
+import { TickerReturnData } from '../../../../../ticker';
+import { Person } from './assets';
 
 export class Walker extends HTML {
     private _destination: Vector2;
@@ -61,15 +62,8 @@ export class Walker extends HTML {
         const angle = this._lookAt ? this._lookAt.sub(this.transform.position).angle() : this.transform.rotation;
 
         if (this._destination && this.transform.position.distance(this._destination) > 10) {
-            this.transform.setPosition(this.transform.position.add(this._destination.sub(this.transform.position).normalize().scale(this.walkspeed)));
-            this.transform.setRotation(this._destination.sub(this.transform.position).angle());
-            this.person.legCycle += 0.011 * this.walkspeed;
-
-            const rightArm = Math.cos(this.person.legCycle * Math.PI);
-            const leftArm = -rightArm;
-            this.person.forceArmPosition = [leftArm * 0.8, rightArm * 0.8];
-            this.person.forceArmTwist = [0,0];
-
+            this.move(obj, this._destination.sub(this.transform.position).normalize(), this.walkspeed);
+            this.transform.setRotation(this.transform.position.sub(this._destination).angle());
             this.person.lookAngle(Utils.clamp(angle - this.transform.rotation, -20, 20));
         } else {
 
@@ -81,10 +75,29 @@ export class Walker extends HTML {
                 this.transform.setRotation(angle + 40);
             }
 
-            this.person.legCycle = 0.5;
-            this.person.armPosition = this.person.armPosition;
-            this.person.armTwist = this.person.armTwist;
-            this.person.lookAngle(angle - this.transform.rotation);
+            this.idle();
         }
+    }
+
+    protected idle() {
+        this.person.legCycle = 0.5;
+        this.person.armPosition = this.person.armPosition;
+        this.person.armTwist = this.person.armTwist;
+    }
+
+    protected walkCycle(speed: number) {
+        this.person.legCycle += 0.011 * speed;
+        const rightArm = Math.cos(this.person.legCycle * Math.PI);
+        const leftArm = -rightArm;
+        this.person.forceArmPosition = [leftArm * 0.8 * speed, rightArm * 0.8 * speed];
+        this.person.forceArmTwist = [0,0];
+    }
+
+    move(obj: TickerReturnData, direction: Vector2, speed: number) {
+
+        glob.debug.setText(`${direction.x.toFixed(2)} ${direction.y.toFixed(2)} ${speed.toFixed(2)} ${obj.frameRate.toFixed(2)} ${obj.interval.toFixed(2)} ${obj.intervalS20.toFixed(2)}`);
+        const normalisedSpeed = speed*obj.intervalS20*0.15;
+        this.transform.setPosition(this.transform.position.add(direction.normalize().scale(normalisedSpeed)));
+        this.walkCycle(normalisedSpeed);
     }
 }

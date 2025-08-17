@@ -1,5 +1,5 @@
 import { Transform, TransformOptions } from '../math/transform';
-import { TickerReturnData as TRD } from '../ticker';
+import { TickerReturnData as TRD } from '../busywork/ticker';
 
 export interface HTMLOptions {
     type?: keyof HTMLElementTagNameMap;

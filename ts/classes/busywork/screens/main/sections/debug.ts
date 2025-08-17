@@ -20,6 +20,10 @@ export class Debug extends Section {
             background: '#3c5561',
             width: '100%',
             height: '100%',
+            color: '#fff',
+            fontFamily: 'monospace',
+            fontSize: '24px',
+            padding: '0 10px',
 
         }, gridParams);
     }

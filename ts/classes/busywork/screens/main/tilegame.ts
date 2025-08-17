@@ -1,5 +1,5 @@
 import { Screen } from "../../../element/screen";
-import { TickerReturnData } from '../../../ticker';
+import { TickerReturnData } from '../../ticker';
 import { Busywork } from '../../../../game';
 import { Computer } from './sections/computer/computer';
 import { Keyboard } from './sections/keyboard/keyboard';
@@ -9,6 +9,7 @@ import { StatBar } from './sections/stat/statbar';
 import { Coffee } from './sections/coffee/coffee';
 import { Debug } from './sections/debug';
 import { Grid } from '../../../element/grid';
+import { glob } from '../../base';
 
 
 export class TileGame extends Screen {
@@ -16,6 +17,7 @@ export class TileGame extends Screen {
     public computer: Computer;
     public keyboard: Keyboard;
     public coffee: Coffee;
+    public debug: Debug;
     private stateData: {
         [key: string]: {
             value: boolean;
@@ -26,7 +28,6 @@ export class TileGame extends Screen {
 
         };
     statBar: StatBar;
-    debug: Debug;
     grid: Grid;
 
     addState(state: string, initial: boolean, condition?: () => boolean, onChange?: (value: boolean) => void) {
@@ -93,6 +94,7 @@ export class TileGame extends Screen {
             }
         }));
         this.grid.append(this.debug = new Debug(this, [1, 2, 1, 1]));
+        glob.debug = this.debug;
         this.grid.append(this.office = new Office([1, 1, 2, 2]));
         this.grid.append(this.coffee = new Coffee(this, [2, 1, 2, 2]));
         this.grid.append(this.computer = new Computer(this, [2, 1, 2, 1]));
@@ -126,16 +128,16 @@ export class TileGame extends Screen {
                 this.coffee.dom.style.width = value ? '400px' : '0px';
             }
         );
-        this.addState('bossinroom', false,
-            () => {
-                return this.office.npc.time > 1500 && this.office.npc.time < 27000;
-            }
-        );
-        this.addState('bosslooking', false,
-            () => {
-                return this.office.npc.time > 21000 && this.office.npc.time < 24000;
-            }
-        );
+        // this.addState('bossinroom', false,
+        //     () => {
+        //         return this.office.npc.time > 1500 && this.office.npc.time < 27000;
+        //     }
+        // );
+        // this.addState('bosslooking', false,
+        //     () => {
+        //         return this.office.npc.time > 21000 && this.office.npc.time < 24000;
+        //     }
+        // );
     }
 
 

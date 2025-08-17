@@ -2,7 +2,7 @@
 import { HTML } from '../../../../../element/element';
 import { Flex } from '../../../../../element/flex';
 import { Vector2 } from '../../../../../math/vector2';
-import { TickerReturnData } from '../../../../../ticker';
+import { TickerReturnData } from '../../../../ticker';
 import { TileGame } from '../../tilegame';
 import { Icon } from '../../util/icon';
 import { Section } from '../../util/section';

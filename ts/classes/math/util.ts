@@ -10,4 +10,8 @@ export class Utils {
             return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
         }
     }
+
+    static lerp(a: number, b: number, t: number): number {
+        return a + (b - a) * t;
+    }
 }

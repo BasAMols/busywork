@@ -1,5 +1,5 @@
 import { Vector2 } from '../../../../../../math/vector2';
-import { TickerReturnData } from '../../../../../../ticker';
+import { TickerReturnData } from '../../../../../ticker';
 import { Chair } from '../furniture';
 import { Walker } from './walker';
 

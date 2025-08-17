@@ -384,9 +384,51 @@ var HTML = class {
   }
 };
 
-// ts/classes/ticker.ts
+// ts/classes/busywork/events.ts
+var Timer = class {
+  constructor(game) {
+    this.game = game;
+    this.events = [];
+    this.currentTime = 0;
+  }
+  add(key, when, callback) {
+    const time = when + this.currentTime;
+    const index = this.events.findIndex((event) => event.time > time);
+    if (index === -1) {
+      this.events.push({
+        key,
+        time,
+        callback
+      });
+    } else {
+      this.events.splice(index, 0, {
+        key,
+        time,
+        callback
+      });
+    }
+  }
+  cancel(key) {
+    this.events = this.events.filter((event) => event.key !== key);
+  }
+  call(event, ticker) {
+    this.events = this.events.filter((e) => e.key !== event.key);
+    event.callback(event.time - this.currentTime, ticker);
+  }
+  tick(obj) {
+    this.currentTime = obj.time;
+    for (const event of this.events) {
+      if (this.currentTime >= event.time) {
+        this.call(event, obj);
+      }
+      break;
+    }
+  }
+};
+
+// ts/classes/busywork/ticker.ts
 var Ticker = class {
-  constructor() {
+  constructor(game) {
     this._running = false;
     this.started = false;
     this.pauzedTime = 0;
@@ -399,6 +441,7 @@ var Ticker = class {
         this.running = !document.hidden;
       }
     });
+    this.timer = new Timer(game);
   }
   get running() {
     return this._running;
@@ -421,15 +464,15 @@ var Ticker = class {
   }
   averagedInterval(count, interval) {
     const average = this.intervalKeeper.slice(0, count).reduce((partialSum, a) => partialSum + a, 0) / count;
-    return Math.abs(interval - average) > 10 ? interval : average;
+    return Math.abs(interval - average) > 20 ? interval : average;
   }
   frame(timeStamp) {
     if (this.running) {
       const interval = timeStamp - this.pTime;
+      this.intervalKeeper = this.intervalKeeper.slice(1, 20);
       this.intervalKeeper.push(interval);
-      this.intervalKeeper = this.intervalKeeper.slice(0, 20);
       while (this.intervalKeeper.length < 20) {
-        this.intervalKeeper.push(this.intervalKeeper[0]);
+        this.intervalKeeper.push(interval);
       }
       this.pTime = timeStamp;
       this.frameN++;
@@ -441,11 +484,13 @@ var Ticker = class {
         frameRate: 1e3 / interval,
         frame: this.frameN,
         intervalS3: this.averagedInterval(3, interval),
-        intervalS10: this.averagedInterval(5, interval),
+        intervalS10: this.averagedInterval(10, interval),
         intervalS20: this.averagedInterval(20, interval),
-        maxRate: this.maxRate
+        maxRate: this.maxRate,
+        time: timeStamp
       };
       glob.ticker = o;
+      this.timer.tick(o);
       this.callbacks.forEach((c) => {
         c(o);
       });
@@ -470,7 +515,7 @@ var glob = new class {
     this.frame = 0;
   }
 }();
-var Game = class extends HTML {
+var Game2 = class extends HTML {
   constructor() {
     super({ style: { width: "100%", height: "100%" } });
     this.screens = {};
@@ -478,9 +523,10 @@ var Game = class extends HTML {
     this.init();
   }
   init() {
-    this.ticker = new Ticker();
+    this.ticker = new Ticker(this);
     this.ticker.add(this.tick.bind(this));
     this.ticker.start();
+    glob.timer = this.ticker.timer;
   }
   addScreen(screen) {
     this.screens[screen.key] = screen;
@@ -969,6 +1015,9 @@ var Utils = class {
       return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
     }
   }
+  static lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
 };
 
 // ts/classes/busywork/screens/main/sections/office/clutter.ts
@@ -1363,7 +1412,54 @@ var Chair = class extends HTML {
   }
 };
 
-// ts/classes/busywork/screens/main/sections/office/people/person.ts
+// ts/classes/busywork/screens/main/util/movement.ts
+var Movement = class {
+  constructor(actor, key, cycle, callback, state = 0) {
+    this.actor = actor;
+    this.key = key;
+    this.cycle = cycle;
+    this.callback = callback;
+    this.state = "walking";
+    this.index = 0;
+    this.index = state;
+  }
+  tick(obj) {
+    const cycle = this.cycle[this.index];
+    if (this.state === "walking") {
+      this.move(cycle, obj);
+    }
+    if (this.state === "waiting") {
+      this.wait(cycle);
+    }
+  }
+  wait(cycle) {
+    this.callback(0, new Vector2(0, 0), "waiting", cycle.time - glob.timer.currentTime);
+  }
+  move(cycle, obj) {
+    const velocity = cycle.to.sub(this.actor.transform.position).normalize().scale(cycle.speed);
+    this.actor.move(obj, velocity, cycle.speed);
+    this.callback(cycle.speed, velocity, "walking", 0);
+    if (this.actor.transform.position.distance(cycle.to) < 1) {
+      this.state = "waiting";
+      if (cycle.time < 1) {
+        this.next();
+      } else {
+        glob.timer.add("".concat(this.key, "-walk"), cycle.time, () => {
+          this.next();
+        });
+      }
+    }
+  }
+  next() {
+    this.index++;
+    if (this.index >= this.cycle.length) {
+      this.index = 0;
+    }
+    this.state = "walking";
+  }
+};
+
+// ts/classes/busywork/screens/main/sections/office/people/assets.ts
 var Person = class extends HTML {
   constructor(hair = "full") {
     super({
@@ -1552,13 +1648,8 @@ var Walker = class extends HTML {
     super.tick(obj);
     const angle = this._lookAt ? this._lookAt.sub(this.transform.position).angle() : this.transform.rotation;
     if (this._destination && this.transform.position.distance(this._destination) > 10) {
-      this.transform.setPosition(this.transform.position.add(this._destination.sub(this.transform.position).normalize().scale(this.walkspeed)));
-      this.transform.setRotation(this._destination.sub(this.transform.position).angle());
-      this.person.legCycle += 0.011 * this.walkspeed;
-      const rightArm = Math.cos(this.person.legCycle * Math.PI);
-      const leftArm = -rightArm;
-      this.person.forceArmPosition = [leftArm * 0.8, rightArm * 0.8];
-      this.person.forceArmTwist = [0, 0];
+      this.move(obj, this._destination.sub(this.transform.position).normalize(), this.walkspeed);
+      this.transform.setRotation(this.transform.position.sub(this._destination).angle());
       this.person.lookAngle(Utils.clamp(angle - this.transform.rotation, -20, 20));
     } else {
       const angleDiff = this.getShortestAngleDifference(this.transform.rotation, angle);
@@ -1567,11 +1658,26 @@ var Walker = class extends HTML {
       } else if (angleDiff < -40) {
         this.transform.setRotation(angle + 40);
       }
-      this.person.legCycle = 0.5;
-      this.person.armPosition = this.person.armPosition;
-      this.person.armTwist = this.person.armTwist;
-      this.person.lookAngle(angle - this.transform.rotation);
+      this.idle();
     }
+  }
+  idle() {
+    this.person.legCycle = 0.5;
+    this.person.armPosition = this.person.armPosition;
+    this.person.armTwist = this.person.armTwist;
+  }
+  walkCycle(speed) {
+    this.person.legCycle += 0.011 * speed;
+    const rightArm = Math.cos(this.person.legCycle * Math.PI);
+    const leftArm = -rightArm;
+    this.person.forceArmPosition = [leftArm * 0.8 * speed, rightArm * 0.8 * speed];
+    this.person.forceArmTwist = [0, 0];
+  }
+  move(obj, direction, speed) {
+    glob.debug.setText("".concat(direction.x.toFixed(2), " ").concat(direction.y.toFixed(2), " ").concat(speed.toFixed(2), " ").concat(obj.frameRate.toFixed(2), " ").concat(obj.interval.toFixed(2), " ").concat(obj.intervalS20.toFixed(2)));
+    const normalisedSpeed = speed * obj.intervalS20 * 0.15;
+    this.transform.setPosition(this.transform.position.add(direction.normalize().scale(normalisedSpeed)));
+    this.walkCycle(normalisedSpeed);
   }
 };
 
@@ -1579,27 +1685,35 @@ var Walker = class extends HTML {
 var Boss = class extends Walker {
   constructor(position, rotation, hair = "full") {
     super({ initialPosition: position, initialRotation: rotation, hair, walkspeed: 0.7 });
-    this.time = 0;
+    this.rotation = 0;
+    this.rotationTarget = 0;
+    this.movement = new Movement(this, "boss", [
+      { to: new Vector2(350, 550), speed: 0.7, time: 100 },
+      { to: new Vector2(200, 500), speed: 0.7, time: 3e3 },
+      { to: new Vector2(450, 300), speed: 0.7, time: 3e3 },
+      { to: new Vector2(350, 220), speed: 0.7, time: 3e3 },
+      { to: new Vector2(350, 700), speed: 1, time: 2e4 }
+    ], (speed, velocity, state, time) => {
+      if (state === "walking") {
+        this.rotationTarget = velocity.angle();
+        this.walkCycle(speed);
+      }
+      if (state === "waiting") {
+        this.idle();
+      }
+    }, 0);
   }
   tick(obj) {
-    this.time = obj.total % 5e4;
-    if (this.time < 1e3) {
-      this.setDestination(new Vector2(350, 550));
-      this.lookAt(new Vector2(350, 0));
-    } else if (this.time < 1e4) {
-      this.setDestination(new Vector2(200, 500));
-      this.lookAt(new Vector2(120, 400));
-    } else if (this.time < 2e4) {
-      this.setDestination(new Vector2(450, 300));
-      this.lookAt(new Vector2(480, 290));
-    } else if (this.time < 24e3) {
-      this.setDestination(new Vector2(350, 220));
-      this.lookAt(new Vector2(300, 150));
-    } else {
-      this.setDestination(new Vector2(350, 700));
-      this.lookAt(new Vector2(350, 1e3));
+    this.movement.tick(obj);
+    if (Math.abs(this.rotation - this.rotationTarget) > 1) {
+      if (this.rotation - this.rotationTarget > 180) {
+        this.rotationTarget = this.rotationTarget + 360;
+      } else if (this.rotation - this.rotationTarget < -180) {
+        this.rotationTarget = this.rotationTarget - 360;
+      }
+      this.rotation = Utils.lerp(this.rotation, this.rotationTarget, 0.05);
+      this.transform.setRotation(this.rotation);
     }
-    super.tick(obj);
   }
 };
 
@@ -2095,32 +2209,6 @@ var CoffeeMachine = class extends HTML {
         position: new Vector2(100, 110)
       }
     }));
-    this.append(this.cupAsset = new Cup({
-      position: new Vector2(90, 180),
-      rotation: 0,
-      scale: new Vector2(1, 1),
-      onClick: () => {
-        if (this.filled >= 1) {
-          this.filled = 0;
-          this.filling = false;
-          this.cup = false;
-          onDrink();
-        }
-      }
-    }));
-    this.append(new HTML({
-      style: {
-        backgroundColor: "#504f5a",
-        borderRadius: "20px 20px 5px 5px",
-        filter: "drop-shadow(0px -4px 3px #00000040)"
-      },
-      transform: {
-        anchor: new Vector2(0.5, 0.5),
-        size: new Vector2(270, 50),
-        rotation: 0,
-        position: new Vector2(0, 250)
-      }
-    }));
     this.append(new HTML({
       style: {
         backgroundColor: "#504f5a",
@@ -2184,6 +2272,32 @@ var CoffeeMachine = class extends HTML {
       children: [
         new Icon("coffee", 30, "black", true)
       ]
+    }));
+    this.append(this.cupAsset = new Cup({
+      position: new Vector2(90, 180),
+      rotation: 0,
+      scale: new Vector2(1, 1),
+      onClick: () => {
+        if (this.filled >= 1) {
+          this.filled = 0;
+          this.filling = false;
+          this.cup = false;
+          onDrink();
+        }
+      }
+    }));
+    this.append(new HTML({
+      style: {
+        backgroundColor: "#504f5a",
+        borderRadius: "20px 20px 5px 5px",
+        filter: "drop-shadow(0px -4px 3px #00000040)"
+      },
+      transform: {
+        anchor: new Vector2(0.5, 0.5),
+        size: new Vector2(270, 50),
+        rotation: 0,
+        position: new Vector2(0, 250)
+      }
     }));
     this.filling = false;
     this.cup = false;
@@ -2435,7 +2549,11 @@ var Debug = class extends Section {
       pointerEvents: "none",
       background: "#3c5561",
       width: "100%",
-      height: "100%"
+      height: "100%",
+      color: "#fff",
+      fontFamily: "monospace",
+      fontSize: "24px",
+      padding: "0 10px"
     }, gridParams);
     this.parent = parent;
   }
@@ -2487,6 +2605,7 @@ var TileGame = class extends Screen {
       }
     }));
     this.grid.append(this.debug = new Debug(this, [1, 2, 1, 1]));
+    glob.debug = this.debug;
     this.grid.append(this.office = new Office([1, 1, 2, 2]));
     this.grid.append(this.coffee = new Coffee(this, [2, 1, 2, 2]));
     this.grid.append(this.computer = new Computer(this, [2, 1, 2, 1]));
@@ -2517,20 +2636,6 @@ var TileGame = class extends Screen {
       },
       (value) => {
         this.coffee.dom.style.width = value ? "400px" : "0px";
-      }
-    );
-    this.addState(
-      "bossinroom",
-      false,
-      () => {
-        return this.office.npc.time > 1500 && this.office.npc.time < 27e3;
-      }
-    );
-    this.addState(
-      "bosslooking",
-      false,
-      () => {
-        return this.office.npc.time > 21e3 && this.office.npc.time < 24e3;
       }
     );
   }
@@ -2644,7 +2749,7 @@ var Menu = class extends Screen {
 };
 
 // ts/game.ts
-var Busywork = class extends Game {
+var Busywork = class extends Game2 {
   constructor() {
     super();
     this.addScreen(new Menu(this));

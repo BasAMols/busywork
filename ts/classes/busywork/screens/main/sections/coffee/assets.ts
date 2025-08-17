@@ -1,7 +1,7 @@
 import { HTML } from '../../../../../element/element';
 import { Flex } from '../../../../../element/flex';
 import { Vector2 } from '../../../../../math/vector2';
-import { TickerReturnData } from '../../../../../ticker';
+import { TickerReturnData } from '../../../../ticker';
 import { Icon } from '../../util/icon';
 
 export class CoffeeMachine extends HTML {
@@ -144,33 +144,6 @@ export class CoffeeMachine extends HTML {
             },
         }));
 
-        this.append(this.cupAsset = new Cup({
-            position: new Vector2(90, 180), rotation: 0, scale: new Vector2(1, 1), onClick: () => {
-                if (this.filled >= 1) {
-                    this.filled = 0;
-                    this.filling = false;
-                    this.cup = false;
-                    onDrink();
-                }
-            }
-        }));
-
-
-        // bottom
-        this.append(new HTML({
-            style: {
-                backgroundColor: '#504f5a',
-                borderRadius: '20px 20px 5px 5px',
-                filter: 'drop-shadow(0px -4px 3px #00000040)',
-
-            },
-            transform: {
-                anchor: new Vector2(0.5, 0.5),
-                size: new Vector2(270, 50),
-                rotation: 0,
-                position: new Vector2(0, 250)
-            }
-        }));
 
         // top
         this.append(new HTML({
@@ -237,6 +210,35 @@ export class CoffeeMachine extends HTML {
             children: [
                 new Icon('coffee', 30, 'black', true)
             ]
+        }));
+
+        
+        this.append(this.cupAsset = new Cup({
+            position: new Vector2(90, 180), rotation: 0, scale: new Vector2(1, 1), onClick: () => {
+                if (this.filled >= 1) {
+                    this.filled = 0;
+                    this.filling = false;
+                    this.cup = false;
+                    onDrink();
+                }
+            }
+        }));
+
+
+        // bottom
+        this.append(new HTML({
+            style: {
+                backgroundColor: '#504f5a',
+                borderRadius: '20px 20px 5px 5px',
+                filter: 'drop-shadow(0px -4px 3px #00000040)',
+
+            },
+            transform: {
+                anchor: new Vector2(0.5, 0.5),
+                size: new Vector2(270, 50),
+                rotation: 0,
+                position: new Vector2(0, 250)
+            }
         }));
 
         this.filling = false;

@@ -1,11 +1,15 @@
 import { HTML } from '../element/element';
 import { Screen } from '../element/screen';
-import { Ticker, TickerReturnData } from '../ticker';
+import { Timer } from './events';
+import { Ticker, TickerReturnData } from './ticker';
+import { Debug } from './screens/main/sections/debug';
 
 export var glob = new class {
     public game: Game;
     public ticker: TickerReturnData;
     public frame: number = 0;
+    public timer: Timer;
+    public debug: Debug;
 };
 
 export abstract class Game extends HTML {
@@ -20,10 +24,10 @@ export abstract class Game extends HTML {
 
 
     init() {
-        this.ticker = new Ticker();
+        this.ticker = new Ticker(this);
         this.ticker.add(this.tick.bind(this));
         this.ticker.start();
-
+        glob.timer = this.ticker.timer;
     }
 
     addScreen(screen: Screen): Screen {
