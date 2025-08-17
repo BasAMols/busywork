@@ -193,6 +193,7 @@ export class TileGame extends Screen {
 
         window.addEventListener('resize', () => {
             this.updateScale();
+            glob.mobile = window.innerWidth < window.innerHeight;
         });
 
         this.updateScale();

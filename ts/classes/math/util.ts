@@ -1,3 +1,4 @@
+import { glob } from '../busywork/base';
 import { Vector2 } from './vector2';
 
 export class Utils {
@@ -16,6 +17,6 @@ export class Utils {
     }
 
     static isMobile(): boolean {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        return glob.mobile;
     }
 }

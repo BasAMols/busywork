@@ -508,6 +508,7 @@ var Ticker = class {
 var glob = new class {
   constructor() {
     this.frame = 0;
+    this.mobile = false;
   }
 }();
 var Game2 = class extends HTML {
@@ -659,7 +660,7 @@ var Utils = class {
     return a + (b - a) * t;
   }
   static isMobile() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return glob.mobile;
   }
 };
 
@@ -2745,6 +2746,7 @@ var TileGame = class extends Screen {
     glob.debug = this.debug;
     window.addEventListener("resize", () => {
       this.updateScale();
+      glob.mobile = window.innerWidth < window.innerHeight;
     });
     this.updateScale();
     this.addState(

@@ -10,6 +10,7 @@ export var glob = new class {
     public frame: number = 0;
     public timer: Timer;
     public debug: Debug;
+    public mobile: boolean = false;
 };
 
 export abstract class Game extends HTML {
