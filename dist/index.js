@@ -1018,6 +1018,9 @@ var Utils = class {
   static lerp(a, b, t) {
     return a + (b - a) * t;
   }
+  static isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
 };
 
 // ts/classes/busywork/screens/main/sections/office/clutter.ts
@@ -1935,20 +1938,37 @@ var Office = class extends Section {
         cursor: "pointer"
       }
     }));
-    this.overlay.dom.addEventListener("mousedown", (e) => {
-      this.mouse = true;
-      this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-    });
-    this.overlay.dom.addEventListener("mouseup", (e) => {
-      this.mouse = false;
-    });
-    this.overlay.dom.addEventListener("mousemove", (e) => {
-      if (this.mouse) {
+    if (Utils.isMobile()) {
+      this.overlay.dom.addEventListener("touchstart", (e) => {
+        this.mouse = true;
+        this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
+      });
+      this.overlay.dom.addEventListener("touchend", (e) => {
+        this.mouse = false;
+      });
+      this.overlay.dom.addEventListener("touchmove", (e) => {
+        if (this.mouse) {
+          this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
+        } else {
+          this.walker.lookAt(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
+        }
+      });
+    } else {
+      this.overlay.dom.addEventListener("mousedown", (e) => {
+        this.mouse = true;
         this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-      } else {
-        this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
-      }
-    });
+      });
+      this.overlay.dom.addEventListener("mouseup", (e) => {
+        this.mouse = false;
+      });
+      this.overlay.dom.addEventListener("mousemove", (e) => {
+        if (this.mouse) {
+          this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
+        } else {
+          this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
+        }
+      });
+    }
     this.tired = 0.2;
   }
   set tired(value) {

@@ -143,7 +143,7 @@ export class Office extends Section {
         this.sitter = new Sitter({ initialPosition: new Vector2(35, 40), hair: 'none', armPosition: [0, 0] }, this.chair);
         wrap.append(this.sitter);
 
-  
+
 
         wrap.append(new Chair(new Vector2(130, 390), 270, {
             filter: 'saturate(0.4)',
@@ -152,7 +152,7 @@ export class Office extends Section {
         this.walker = new Player(this);
         wrap.append(this.walker);
 
-        
+
         const c = wrap.append(new Chair(new Vector2(480, 200), 120, {
             filter: 'saturate(0.4)',
         })) as Chair;
@@ -186,20 +186,40 @@ export class Office extends Section {
             }
         }));
 
-        this.overlay.dom.addEventListener('mousedown', (e) => {
-            this.mouse = true;
-            this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-        });
-        this.overlay.dom.addEventListener('mouseup', (e) => {
-            this.mouse = false;
-        });
-        this.overlay.dom.addEventListener('mousemove', (e) => {
-            if (this.mouse) {
+        //test devie
+        if (Utils.isMobile()) {
+            this.overlay.dom.addEventListener('touchstart', (e) => {
+                this.mouse = true;
+                this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
+            });
+            this.overlay.dom.addEventListener('touchend', (e) => {
+                this.mouse = false;
+            });
+            this.overlay.dom.addEventListener('touchmove', (e) => {
+                if (this.mouse) {
+                    this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
+                } else {
+                    this.walker.lookAt(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
+                }
+            });
+        } else {
+            this.overlay.dom.addEventListener('mousedown', (e) => {
+                this.mouse = true;
                 this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-            } else {
-                this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
-            }
-        });
+            });
+
+            this.overlay.dom.addEventListener('mouseup', (e) => {
+                this.mouse = false;
+            });
+
+            this.overlay.dom.addEventListener('mousemove', (e) => {
+                if (this.mouse) {
+                    this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
+                } else {
+                    this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
+                }
+            });
+        }
         this.tired = 0.2;
     }
 

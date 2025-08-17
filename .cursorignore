@@ -7,5 +7,4 @@
 *.bmp
 *.tiff
 *.mtl
-dist
 node_modules
