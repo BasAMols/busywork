@@ -65,7 +65,7 @@ export class Computer extends Section {
                 fontFamily: 'monospace',
                 borderRadius: '30px',
                 pointerEvents: 'none',
-                filter: 'sepia(0.6) blur(1px)',
+                filter: 'sepia(0.6) blur(0.5px)',
                 letterSpacing: '4px',
                 textAlign: 'center',
                 marginTop: '20%',
@@ -86,7 +86,7 @@ export class Computer extends Section {
                 fontFamily: 'monospace',
                 borderRadius: '30px',
                 pointerEvents: 'none',
-                filter: 'sepia(0.6) blur(1px)',
+                filter: 'sepia(0.6) blur(0.5px)',
                 letterSpacing: '4px',
                 textAlign: 'center',
             }

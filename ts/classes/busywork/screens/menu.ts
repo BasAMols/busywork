@@ -14,7 +14,7 @@ export class Menu extends Screen {
             justifyContent: 'center',
             style: {
                 width: '100%',
-                height: '100%',
+                height: '100%', 
             }
         }));
         const row1 = column.append(new Flex({
@@ -31,7 +31,7 @@ export class Menu extends Screen {
 
 
         row1.append(new Label({ text: 'Busywork', size: 20, color: 'white', weight: 'bold', font: 'Arial, sans-serif' }));
-        row2.append(new Button({ text: 'Click me', style: { backgroundColor: '#2198c9', color: 'white', borderRadius: '5px' }, onClick: () => {
+        row2.append(new Button({ text: 'Click me', style: { backgroundColor: '#2198c9', color: 'white', borderRadius: '5px' }, onMouseDown: () => {
             this.game.start();
         } }));
     }

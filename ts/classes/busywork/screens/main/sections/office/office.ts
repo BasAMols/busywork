@@ -182,43 +182,29 @@ export class Office extends Section {
                 width: '100%',
                 height: '100%',
                 cursor: 'pointer',
+                pointerEvents: 'all',
             }
         }));
+        this.overlay.dom.addEventListener('pointerdown', (e) => {
+            this.mouse = true;
+            this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
+        });
 
-        //test devie
-        if (Utils.isMobile()) {
-            this.overlay.dom.addEventListener('touchstart', (e) => {
-                this.mouse = true;
-                this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
-            });
-            this.overlay.dom.addEventListener('touchend', (e) => {
-                this.mouse = false;
-            });
-            this.overlay.dom.addEventListener('touchmove', (e) => {
-                if (this.mouse) {
-                    this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
-                } else {
-                    this.walker.lookAt(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
-                }
-            });
-        } else {
-            this.overlay.dom.addEventListener('mousedown', (e) => {
-                this.mouse = true;
+        this.overlay.dom.addEventListener('pointerup', (e) => {
+            this.mouse = false;
+        });
+        this.overlay.dom.addEventListener('pointerleave', (e) => {
+            this.mouse = false;
+        });
+
+        this.overlay.dom.addEventListener('pointermove', (e) => {
+            if (this.mouse) {
                 this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-            });
+            } else {
+                this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
+            }
+        });
 
-            this.overlay.dom.addEventListener('mouseup', (e) => {
-                this.mouse = false;
-            });
-
-            this.overlay.dom.addEventListener('mousemove', (e) => {
-                if (this.mouse) {
-                    this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-                } else {
-                    this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
-                }
-            });
-        }
         this.tired = 0.2;
     }
 

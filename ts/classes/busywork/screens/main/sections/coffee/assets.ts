@@ -184,11 +184,12 @@ export class CoffeeMachine extends HTML {
             justifyContent: 'center',
             alignItems: 'center',
             style: {
-                backgroundColor: '#95bcff',
+                backgroundColor: 'rgb(179 211 218)',
                 borderRadius: '100%',
-                boxShadow: '0px 0px 10px #00000088, 8px 4px 4px #00000050, inset 6px 3px 20px #00000088',
+                boxShadow: ' inset 1px 1px 4px #000000cc',
+                border: '2px solid #d7d6d3',
                 cursor: 'pointer',
-                transition: 'box-shadow 0.1s ease-in-out',
+                transition: 'box-shadow 0.2s ease-in-out',
             },
             transform: {
                 anchor: new Vector2(0.5, 0.5),
@@ -196,19 +197,20 @@ export class CoffeeMachine extends HTML {
                 rotation: 0,
                 position: new Vector2(205, 20)
             },
-            onClick: () => {
+
+            onMouseDown: (e, element) => {
+                element.dom.style.boxShadow = 'inset 1px 1px 8px #000000aa';
+                (element.children[0] as Icon).iconSize(25);
                 if (this.cup) {
                     this.filling = true;
                 }
             },
-            onMouseDown: (e, element) => {
-                element.dom.style.boxShadow = '0px 0px 10px #00000088, 2px 2px 2px #00000088, inset 6px 3px 20px #00000088';
-            },
             onMouseUp: (e, element) => {
-                element.dom.style.boxShadow = '0px 0px 10px #00000088, 8px 4px 4px #00000050, inset 6px 3px 20px #00000088';
+                element.dom.style.boxShadow = 'inset 1px 1px 4px #000000cc';
+                (element.children[0] as Icon).iconSize(26);
             },
             children: [
-                new Icon('coffee', 30, 'black', true)
+                new Icon('coffee', 26, 'black', true)
             ]
         }));
 
@@ -291,7 +293,7 @@ export class Cup extends HTML {
                 position: position,
                 rotation: rotation,
             },
-            onClick,
+            onMouseDown: onClick,
         });
 
         // steam

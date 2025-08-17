@@ -7,7 +7,6 @@ export interface HTMLOptions {
     transform?: TransformOptions;
     classList?: string[];
     text?: string;
-    onClick?: (event: MouseEvent, element: HTML) => void;
     onMouseDown?: (event: MouseEvent, element: HTML) => void;
     onMouseUp?: (event: MouseEvent, element: HTML) => void;
     onMouseMove?: (event: MouseEvent, element: HTML) => void;
@@ -50,32 +49,28 @@ export class HTML {
         });
 
         if (options.onMouseDown) {
-            this.dom.addEventListener('mousedown', (e) => {
+            this.dom.addEventListener('pointerdown', (e) => {
                 this.options.onMouseDown(e, this);
             });
         }
         if (options.onMouseUp) {
-            this.dom.addEventListener('mouseup', (e) => {
+            this.dom.addEventListener('pointerup', (e) => {
                 this.options.onMouseUp(e, this);
             });
         }
-        if (options.onClick) {
-            this.dom.addEventListener('click', (e) => {
-                this.options.onClick(e, this);
-            });
-        }
+
         if (options.onMouseMove) {
-            this.dom.addEventListener('mousemove', (e) => {
+            this.dom.addEventListener('pointermove', (e) => {
                 this.options.onMouseMove(e, this);
             });
         }
         if (options.onMouseEnter) {
-            this.dom.addEventListener('mouseenter', (e) => {
+            this.dom.addEventListener('pointerenter', (e) => {
                 this.options.onMouseEnter(e, this);
             });
         }
         if (options.onMouseLeave) {
-            this.dom.addEventListener('mouseleave', (e) => {
+            this.dom.addEventListener('pointerleave', (e) => {
                 this.options.onMouseLeave(e, this);
             });
         }

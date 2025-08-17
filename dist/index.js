@@ -310,32 +310,27 @@ var HTML = class {
       this.dom.style.transform = "matrix3d(".concat(matrix.join(","), ")");
     });
     if (options.onMouseDown) {
-      this.dom.addEventListener("mousedown", (e) => {
+      this.dom.addEventListener("pointerdown", (e) => {
         this.options.onMouseDown(e, this);
       });
     }
     if (options.onMouseUp) {
-      this.dom.addEventListener("mouseup", (e) => {
+      this.dom.addEventListener("pointerup", (e) => {
         this.options.onMouseUp(e, this);
       });
     }
-    if (options.onClick) {
-      this.dom.addEventListener("click", (e) => {
-        this.options.onClick(e, this);
-      });
-    }
     if (options.onMouseMove) {
-      this.dom.addEventListener("mousemove", (e) => {
+      this.dom.addEventListener("pointermove", (e) => {
         this.options.onMouseMove(e, this);
       });
     }
     if (options.onMouseEnter) {
-      this.dom.addEventListener("mouseenter", (e) => {
+      this.dom.addEventListener("pointerenter", (e) => {
         this.options.onMouseEnter(e, this);
       });
     }
     if (options.onMouseLeave) {
-      this.dom.addEventListener("mouseleave", (e) => {
+      this.dom.addEventListener("pointerleave", (e) => {
         this.options.onMouseLeave(e, this);
       });
     }
@@ -726,7 +721,7 @@ var Computer = class extends Section {
         fontFamily: "monospace",
         borderRadius: "30px",
         pointerEvents: "none",
-        filter: "sepia(0.6) blur(1px)",
+        filter: "sepia(0.6) blur(0.5px)",
         letterSpacing: "4px",
         textAlign: "center",
         marginTop: "20%"
@@ -747,7 +742,7 @@ var Computer = class extends Section {
         fontFamily: "monospace",
         borderRadius: "30px",
         pointerEvents: "none",
-        filter: "sepia(0.6) blur(1px)",
+        filter: "sepia(0.6) blur(0.5px)",
         letterSpacing: "4px",
         textAlign: "center"
       }
@@ -1952,40 +1947,27 @@ var Office = class extends Section {
       style: {
         width: "100%",
         height: "100%",
-        cursor: "pointer"
+        cursor: "pointer",
+        pointerEvents: "all"
       }
     }));
-    if (Utils.isMobile()) {
-      this.overlay.dom.addEventListener("touchstart", (e) => {
-        this.mouse = true;
-        this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
-      });
-      this.overlay.dom.addEventListener("touchend", (e) => {
-        this.mouse = false;
-      });
-      this.overlay.dom.addEventListener("touchmove", (e) => {
-        if (this.mouse) {
-          this.walker.setDestination(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
-        } else {
-          this.walker.lookAt(new Vector2(e.touches[0].clientX, e.touches[0].clientY));
-        }
-      });
-    } else {
-      this.overlay.dom.addEventListener("mousedown", (e) => {
-        this.mouse = true;
+    this.overlay.dom.addEventListener("pointerdown", (e) => {
+      this.mouse = true;
+      this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
+    });
+    this.overlay.dom.addEventListener("pointerup", (e) => {
+      this.mouse = false;
+    });
+    this.overlay.dom.addEventListener("pointerleave", (e) => {
+      this.mouse = false;
+    });
+    this.overlay.dom.addEventListener("pointermove", (e) => {
+      if (this.mouse) {
         this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-      });
-      this.overlay.dom.addEventListener("mouseup", (e) => {
-        this.mouse = false;
-      });
-      this.overlay.dom.addEventListener("mousemove", (e) => {
-        if (this.mouse) {
-          this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-        } else {
-          this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
-        }
-      });
-    }
+      } else {
+        this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
+      }
+    });
     this.tired = 0.2;
   }
   set tired(value) {
@@ -2029,12 +2011,16 @@ var Icon = class extends HTML {
       style: {
         fontSize: size + "px",
         color,
-        pointerEvents: "none"
+        pointerEvents: "none",
+        transition: "font-size 0.2s ease-in-out"
       }
     });
   }
   changeIcon(text) {
     this.setText(text);
+  }
+  iconSize(size) {
+    this.dom.style.fontSize = size + "px";
   }
 };
 
@@ -2283,11 +2269,12 @@ var CoffeeMachine = class extends HTML {
       justifyContent: "center",
       alignItems: "center",
       style: {
-        backgroundColor: "#95bcff",
+        backgroundColor: "rgb(179 211 218)",
         borderRadius: "100%",
-        boxShadow: "0px 0px 10px #00000088, 8px 4px 4px #00000050, inset 6px 3px 20px #00000088",
+        boxShadow: " inset 1px 1px 4px #000000cc",
+        border: "2px solid #d7d6d3",
         cursor: "pointer",
-        transition: "box-shadow 0.1s ease-in-out"
+        transition: "box-shadow 0.2s ease-in-out"
       },
       transform: {
         anchor: new Vector2(0.5, 0.5),
@@ -2295,19 +2282,19 @@ var CoffeeMachine = class extends HTML {
         rotation: 0,
         position: new Vector2(205, 20)
       },
-      onClick: () => {
+      onMouseDown: (e, element) => {
+        element.dom.style.boxShadow = "inset 1px 1px 8px #000000aa";
+        element.children[0].iconSize(25);
         if (this.cup) {
           this.filling = true;
         }
       },
-      onMouseDown: (e, element) => {
-        element.dom.style.boxShadow = "0px 0px 10px #00000088, 2px 2px 2px #00000088, inset 6px 3px 20px #00000088";
-      },
       onMouseUp: (e, element) => {
-        element.dom.style.boxShadow = "0px 0px 10px #00000088, 8px 4px 4px #00000050, inset 6px 3px 20px #00000088";
+        element.dom.style.boxShadow = "inset 1px 1px 4px #000000cc";
+        element.children[0].iconSize(26);
       },
       children: [
-        new Icon("coffee", 30, "black", true)
+        new Icon("coffee", 26, "black", true)
       ]
     }));
     this.append(this.cupAsset = new Cup({
@@ -2391,7 +2378,7 @@ var Cup = class extends HTML {
         position,
         rotation
       },
-      onClick
+      onMouseDown: onClick
     });
     this.steam = [];
     this._steaming = false;
@@ -2849,7 +2836,7 @@ var Menu = class extends Screen {
       justifyContent: "center"
     }));
     row1.append(new Label({ text: "Busywork", size: 20, color: "white", weight: "bold", font: "Arial, sans-serif" }));
-    row2.append(new Button({ text: "Click me", style: { backgroundColor: "#2198c9", color: "white", borderRadius: "5px" }, onClick: () => {
+    row2.append(new Button({ text: "Click me", style: { backgroundColor: "#2198c9", color: "white", borderRadius: "5px" }, onMouseDown: () => {
       this.game.start();
     } }));
   }
@@ -2861,6 +2848,11 @@ var Busywork = class extends Game2 {
     super();
     this.addScreen(new Menu(this));
     this.addScreen(new TileGame(this));
+    window.oncontextmenu = function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    };
   }
   run() {
     this.screens["menu"].visible = false;
@@ -2874,8 +2866,18 @@ var Busywork = class extends Game2 {
 
 // ts/index.ts
 document.addEventListener("DOMContentLoaded", async () => {
+  if (location.hostname !== "localhost") {
+    const base = document.createElement("base");
+    base.href = "https://basamols.github.io/busywork/dist/";
+    document.head.appendChild(base);
+  }
   const g = new Busywork();
   g.run();
   document.body.appendChild(g.dom);
+  window.oncontextmenu = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  };
 });
 //# sourceMappingURL=index.js.map

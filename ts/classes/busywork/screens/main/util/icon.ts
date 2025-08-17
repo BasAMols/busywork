@@ -9,6 +9,7 @@ export class Icon extends HTML {
                 fontSize: size + 'px',
                 color: color,
                 pointerEvents: 'none',
+                transition: 'font-size 0.2s ease-in-out',
             }
         });
         
@@ -16,5 +17,9 @@ export class Icon extends HTML {
 
     changeIcon(text: string) {
         this.setText(text);
+    }
+
+    iconSize(size: number) {
+        this.dom.style.fontSize = size + 'px';
     }
 }
