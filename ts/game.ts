@@ -4,10 +4,11 @@ import { Menu } from './classes/busywork/screens/menu';
 
 export class Busywork extends Base {
     private _menu: Menu;
+    private main: TileGame;
     public constructor() {
         super();
         this.addScreen(new Menu(this));
-        this.addScreen(new TileGame(this));
+        this.addScreen(this.main = new TileGame(this));
 
     }
 

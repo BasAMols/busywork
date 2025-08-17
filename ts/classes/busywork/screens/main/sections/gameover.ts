@@ -1,3 +1,4 @@
+import { HTML } from '../../../../element/element';
 import { Vector2 } from '../../../../math/vector2';
 import { glob } from '../../../base';
 import { TickerReturnData } from '../../../ticker';
@@ -5,12 +6,14 @@ import { TileGame } from '../tilegame';
 import { Section } from '../util/section';
 
 export class Gameover extends Section {
+    text1: HTML;
+    text2: HTML;
 
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(700, 20), {
             transition: 'width 0.8s ease-in-out, height 0.8s ease-in-out, opacity 0.8s ease-in-out',
             display: 'flex',
-            flexDirection: 'row',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: '10px',
@@ -21,18 +24,38 @@ export class Gameover extends Section {
             background: '#3c5561',
             width: '100%',
             height: '100%',
-            color: '#fff',
-            fontSize: '90px',
-            padding: '0 10px',
+            padding: '50px',
             overflow: 'hidden',
-            fontFamily: 'Noto Sans',
-            fontWeight: '500',
-            textShadow: '0px 0px 10px black',
-
         }, gridParams);
 
+        this.append(this.text1 = new HTML({
+            style: {
+                width: '100%',
+                fontFamily: 'Noto Sans',
+                fontWeight: '500',
+                textShadow: '0px 0px 10px black',
+                lineHeight: '100px',
+                fontSize: '90px',
+                color: '#fff',
+                position: 'relative',
+            },
+            text: 'GAME OVER',
+        }));
+        this.append(this.text2 = new HTML({
+            style: {
+                width: '100%',
+                fontFamily: 'Noto Sans',
+                fontWeight: '500',
+                textShadow: '0px 0px 10px black',
+                fontSize: '40px',
+                color: '#fff',
+                position: 'relative',
+                lineHeight: '50px',
+            },
+        }));
+
         this.opacity = 0;
-        this.setText('GAME OVER');
+        this.text1.setText('GAME OVER');
     }
 
     public trigger() {
@@ -40,12 +63,12 @@ export class Gameover extends Section {
         glob.game.ticker.stop();
         this.parent.addState('atdesk', false);
         this.parent.addState('atcoffeemachine', false);
-        this.parent.office.tired = 0;
         this.parent.updateGridSize(true);
+        this.text2.setText(`${this.parent.office.npc.collected} report${this.parent.office.npc.collected === 1 ? '' : 's'} completed`);
     }
 
     public tick(obj: TickerReturnData) {
-        
+
         if (this.parent.getState('gameover')) {
             this.trigger();
         }

@@ -701,7 +701,6 @@ var Computer = class extends Section {
   constructor(parent, gridParams) {
     super(new Vector2(450, 350), {
       backgroundColor: "#90857f",
-      boxShadow: "0px 0px 200px #0000004a",
       width: "100%",
       height: "350px",
       justifyContent: "flex-start",
@@ -1755,6 +1754,7 @@ var Boss = class extends Walker {
     this.rotationTarget = 0;
     this.waitTime = 0;
     this.waitTimeMax = 1e4;
+    this.collected = 0;
     this._hasPaper = true;
     this.phase = 0;
     this.movement = new Movement(this, "boss", [
@@ -1770,6 +1770,7 @@ var Boss = class extends Walker {
             game.computer.completed -= game.computer.target;
             this.waitTime = 0;
             this.hasPaper = true;
+            this.collected++;
             return true;
           }
           this.waitTime += glob.ticker.interval;
@@ -2608,7 +2609,6 @@ var Coffee = class extends Section {
   constructor(parent, gridParams) {
     super(new Vector2(400, 600), {
       backgroundColor: "#354c59",
-      boxShadow: "0px 0px 200px #0000004a",
       justifyContent: "flex-start",
       overflow: "hidden"
     }, gridParams);
@@ -2744,7 +2744,7 @@ var Gameover = class extends Section {
     super(new Vector2(700, 20), {
       transition: "width 0.8s ease-in-out, height 0.8s ease-in-out, opacity 0.8s ease-in-out",
       display: "flex",
-      flexDirection: "row",
+      flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
       borderRadius: "10px",
@@ -2755,25 +2755,45 @@ var Gameover = class extends Section {
       background: "#3c5561",
       width: "100%",
       height: "100%",
-      color: "#fff",
-      fontSize: "90px",
-      padding: "0 10px",
-      overflow: "hidden",
-      fontFamily: "Noto Sans",
-      fontWeight: "500",
-      textShadow: "0px 0px 10px black"
+      padding: "50px",
+      overflow: "hidden"
     }, gridParams);
     this.parent = parent;
+    this.append(this.text1 = new HTML({
+      style: {
+        width: "100%",
+        fontFamily: "Noto Sans",
+        fontWeight: "500",
+        textShadow: "0px 0px 10px black",
+        lineHeight: "100px",
+        fontSize: "90px",
+        color: "#fff",
+        position: "relative"
+      },
+      text: "GAME OVER"
+    }));
+    this.append(this.text2 = new HTML({
+      style: {
+        width: "100%",
+        fontFamily: "Noto Sans",
+        fontWeight: "500",
+        textShadow: "0px 0px 10px black",
+        fontSize: "40px",
+        color: "#fff",
+        position: "relative",
+        lineHeight: "50px"
+      }
+    }));
     this.opacity = 0;
-    this.setText("GAME OVER");
+    this.text1.setText("GAME OVER");
   }
   trigger() {
     this.opacity = 0.8;
     glob.game.ticker.stop();
     this.parent.addState("atdesk", false);
     this.parent.addState("atcoffeemachine", false);
-    this.parent.office.tired = 0;
     this.parent.updateGridSize(true);
+    this.text2.setText("".concat(this.parent.office.npc.collected, " report").concat(this.parent.office.npc.collected === 1 ? "" : "s", " completed"));
   }
   tick(obj) {
     if (this.parent.getState("gameover")) {
@@ -3064,7 +3084,7 @@ var Busywork = class extends Game2 {
   constructor() {
     super();
     this.addScreen(new Menu(this));
-    this.addScreen(new TileGame(this));
+    this.addScreen(this.main = new TileGame(this));
   }
   run() {
     this.screens["menu"].visible = false;

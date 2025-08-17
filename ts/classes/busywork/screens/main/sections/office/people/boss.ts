@@ -17,6 +17,7 @@ export class Boss extends Walker {
     public waitTime: number = 0;
     public waitTimeMax: number = 10000;
     public paper: HTML;
+    public collected: number = 0;
 
     public constructor(game: TileGame, position: Vector2, rotation: number, hair: 'full' | 'half' | 'none' = 'full') {
         super({ initialPosition: position, initialRotation: rotation, hair, walkspeed: 0.7 });
@@ -32,6 +33,7 @@ export class Boss extends Walker {
                         game.computer.completed -= game.computer.target;
                         this.waitTime = 0;
                         this.hasPaper = true;
+                        this.collected++;
                         return true;
                     }
                     this.waitTime += glob.ticker.interval;

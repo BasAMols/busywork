@@ -10,7 +10,6 @@ export class Coffee extends Section {
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(400, 600), {
             backgroundColor: '#354c59',
-            boxShadow: '0px 0px 200px #0000004a',
             justifyContent: 'flex-start',
             overflow: 'hidden',
         }, gridParams);

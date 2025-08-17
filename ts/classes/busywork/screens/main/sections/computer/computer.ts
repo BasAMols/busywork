@@ -19,7 +19,6 @@ export class Computer extends Section {
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(450, 350), {
             backgroundColor: '#90857f',
-            boxShadow: '0px 0px 200px #0000004a',
             width: '100%',
             height: '350px',
             justifyContent: 'flex-start',
