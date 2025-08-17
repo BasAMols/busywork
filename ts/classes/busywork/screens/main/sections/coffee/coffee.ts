@@ -11,6 +11,7 @@ export class Coffee extends Section {
             backgroundColor: '#354c59',
             boxShadow: '0px 0px 200px #0000004a',
             width: '400px',
+            height: '600px',
             justifyContent: 'flex-start',
         }, gridParams);
         

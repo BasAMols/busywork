@@ -31,6 +31,7 @@ export class StatBar extends Section {
             pointerEvents: 'none',
             width: '100%',
             height: '100%',
+            top: '-50px',
         }, gridParams);
 
         this.addStat(StatBar.getStatBlock('person_apron', 50), 0, () => {

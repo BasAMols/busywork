@@ -10,7 +10,7 @@ export class Section extends HTML {
                 height: size.y + 'px',
 
                 // boxShadow: '0px 0px 200px #0000004a',
-                transition: 'width 1.2s ease-in-out, margin-left 1.2s ease-in-out',
+                transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1), margin-left 1s cubic-bezier(0.4, 0, 0.2, 1)',
 
                 overflow: 'hidden',
                 borderRadius: '10px',

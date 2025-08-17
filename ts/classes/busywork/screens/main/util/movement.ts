@@ -12,7 +12,7 @@ export class Movement {
         to: Vector2;
         speed: number;
         time: number;
-    }[], private callback: (speed: number, velocity: Vector2, state: 'walking' | 'waiting', time: number) => void, state: number = 0) {
+    }[], private callback: (speed: number, velocity: Vector2, state: 'walking' | 'waiting', time: number, cycle: number) => void, state: number = 0) {
         this.index = state;
     }
 
@@ -29,7 +29,7 @@ export class Movement {
     }
 
     private wait(cycle: typeof this.cycle[number]) {
-        this.callback(0, new Vector2(0, 0), 'waiting', cycle.time - glob.timer.currentTime);
+        this.callback(0, new Vector2(0, 0), 'waiting', cycle.time - glob.timer.currentTime, this.index);
     }
 
     private move(cycle: typeof this.cycle[number], obj: TickerReturnData) {
@@ -38,7 +38,7 @@ export class Movement {
 
         this.actor.move(obj, velocity, cycle.speed);
 
-        this.callback(cycle.speed, velocity, 'walking', 0);
+        this.callback(cycle.speed, velocity, 'walking', 0, this.index);
 
         if (this.actor.transform.position.distance(cycle.to) < 1) {
             this.state = 'waiting';

@@ -11,6 +11,85 @@ import { Debug } from './sections/debug';
 import { Grid } from '../../../element/grid';
 import { glob } from '../../base';
 
+export class GridManager {
+
+    private columns: number[] = [450, 700, 450];
+    private rows: number[] = [0, 350, 230, 50];
+
+    public constructor(private grid: Grid, columns: number[], rows: number[], private gap: number = 20) {
+        this.columns = columns;
+        this.rows = rows;
+        this.updateGrid();
+    }
+
+    setColumn(index: number, width: number) {
+        this.columns[index] = width;
+    }
+
+    setColumns(columns: number[]) {
+        this.columns = columns;
+    }
+
+    setRow(index: number, height: number) {
+        this.rows[index] = height;
+    }
+
+    setRows(rows: number[]) {
+        this.rows = rows;
+    }
+
+    getColumns() {
+        let columns: number[] = [];
+        let leftColumn = false;
+        this.columns.forEach((width, index) => {
+
+            if (index > 0) {
+                if (leftColumn && width !== 0) {
+                    columns.push(this.gap);
+                } else {
+                    columns.push(0);
+                }
+            }
+
+            if (width !== 0) {
+                leftColumn = true;
+            }
+
+            columns.push(width);
+        });
+        return columns;
+    }
+    getRows() {
+        let rows: number[] = [];
+        let leftRow = false;
+        this.rows.forEach((width, index) => {
+
+            if (index > 0) {
+                if (leftRow && width !== 0) {
+                    rows.push(this.gap);
+                } else {
+                    rows.push(0);
+                }
+            }
+
+            if (width !== 0) {
+                leftRow = true;
+            }
+
+            rows.push(width);
+        });
+        return rows;
+    }
+
+    getSize() {
+        return new Vector2(this.getColumns().reduce((a, b) => a + b, 0), this.getRows().reduce((a, b) => a + b, 0));
+    }
+
+    updateGrid() {
+        this.grid.setTemplateColumns(this.getColumns().join('px ') + 'px');
+        this.grid.setTemplateRows(this.getRows().join('px ') + 'px');
+    }
+}
 
 export class TileGame extends Screen {
     public office: Office;
@@ -30,6 +109,7 @@ export class TileGame extends Screen {
         };
     statBar: StatBar;
     grid: Grid;
+    gridManager: GridManager;
 
     addState(state: string, initial: boolean, condition?: () => boolean, onChange?: (value: boolean) => void) {
         this.stateData[state] = {
@@ -46,46 +126,18 @@ export class TileGame extends Screen {
 
     updateGridSize() {
 
-        let w1 = 680;
-        let w2 = 0;
-        this.maxSize = new Vector2(800, 620);
-        if (this.state('atcoffeemachine')) {
-            w2 = 400;
-            this.maxSize = new Vector2(1170, 620);
-        } else if (this.state('atdesk')) {
-            w2 = 450;
-            this.maxSize = new Vector2(1170, 620);
-        }
+        this.gridManager.setColumn(0, this.state('atdesk') ? 450 : 0);
+        this.gridManager.setColumn(1, 680);
+        this.gridManager.setColumn(2, this.state('atcoffeemachine') ? 400 : 0);
+        this.gridManager.updateGrid();
 
-        if (w2) {
-            this.office.setStyle({
-                width: this.state('atdesk') ? `${w1}px` : '100%',
-                // marginLeft: '0px',
-            });
-        } else {
-            this.office.setStyle({
-                width: this.state('atdesk') ? `${w1}px` : 'calc(100% + 20px)',
-                // marginLeft: this.state('atdesk') ? '0px' : '20px',
-            });
-        }
-        this.computer.setStyle({
-            width: this.state('atdesk') ? '450px' : '0%',
-        });
-        this.keyboard.setStyle({
-            width: this.state('atdesk') ? '450px' : '0%',
-        });
-        this.coffee.setStyle({
-            width: this.state('atcoffeemachine') ? '400px' : '0%',
-        });
-
-        this.grid.setTemplateColumns(`${w1}px ${w2}px`);
-        this.updateScale();
+        this.updateScale(this.gridManager.getSize().add(new Vector2(20, 20)));
     }
 
-    updateScale() {
+    updateScale(size: Vector2 = this.maxSize) {
         const windowSize = new Vector2(window.innerWidth, window.innerHeight);
-        const xf = windowSize.x / this.maxSize.x;
-        const yf = windowSize.y / this.maxSize.y;
+        const xf = windowSize.x / size.x;
+        const yf = windowSize.y / size.y;
         this.grid.transform.setScale(new Vector2(Math.min(xf, yf), Math.min(xf, yf)));
     }
 
@@ -93,28 +145,27 @@ export class TileGame extends Screen {
         super('test');
 
         this.append(this.grid = new Grid({
-            columns: '700px 450px',
-            rows: '0px 350px 230px 0px',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: 20,
+            gap: 0,
             style: {
                 width: `${this.maxSize.x}px`,
                 height: `${this.maxSize.y}px`,
-                transition: 'grid-template-columns 1.2s ease-in-out, grid-template-rows 1.2s ease-in-out, transform 1.2s ease-in-out',
+                transition: 'grid-template-columns 1s cubic-bezier(0.4, 0, 0.2, 1), grid-template-rows 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1)',
             },
             transform: {
                 size: this.maxSize,
                 anchor: new Vector2(0.5, 0.5),
             }
         }), true);
-        this.grid.append(this.debug = new Debug(this, [1, 2, 1, 1]));
+        this.grid.append(this.coffee = new Coffee(this, [5, 1, 3, 3]));
+        this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+        this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+        this.grid.append(this.debug = new Debug(this, [1, 5, 1, 1]));
+        this.grid.append(this.office = new Office([3, 1, 3, 3]), true);
+        this.grid.append(this.statBar = new StatBar(this, [3, 1, 7, 1]));
+        this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 50], 20);
         glob.debug = this.debug;
-        this.grid.append(this.office = new Office([1, 1, 2, 2]), true);
-        this.grid.append(this.coffee = new Coffee(this, [2, 1, 2, 2]));
-        this.grid.append(this.computer = new Computer(this, [2, 1, 2, 1]));
-        this.grid.append(this.keyboard = new Keyboard(this, [2, 1, 3, 1]));
-        this.grid.append(this.statBar = new StatBar(this, [1, 1, 4, 1]));
 
         window.addEventListener('resize', () => {
             this.updateScale();
@@ -149,16 +200,16 @@ export class TileGame extends Screen {
                 this.coffee.dom.style.width = value ? '400px' : '0px';
             }
         );
-        // this.addState('bossinroom', false,
-        //     () => {
-        //         return this.office.npc.time > 1500 && this.office.npc.time < 27000;
-        //     }
-        // );
-        // this.addState('bosslooking', false,
-        //     () => {
-        //         return this.office.npc.time > 21000 && this.office.npc.time < 24000;
-        //     }
-        // );
+        this.addState('bossinroom', false,
+            () => {
+                return this.office.npc.phase > 0 && this.office.npc.phase < 4;
+            }
+        );
+        this.addState('bosslooking', false,
+            () => {
+                return this.office.npc.phase > 2 && this.office.npc.phase < 4;
+            }
+        );
     }
 
 

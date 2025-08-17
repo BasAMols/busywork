@@ -19,7 +19,8 @@ export class Boss extends Walker {
             { to: new Vector2(450, 300), speed: 0.7, time: 3000 },
             { to: new Vector2(350, 220), speed: 0.7, time: 3000 },
             { to: new Vector2(350, 700), speed: 1, time: 20000 },
-        ], (speed, velocity, state, time) => {
+        ], (speed, velocity, state, time, phase) => {
+            this.phase = phase;
             if (state === 'walking') {
                 this.rotationTarget = velocity.angle();
                 this.walkCycle(speed);
@@ -29,6 +30,8 @@ export class Boss extends Walker {
             }
         }, 0);
     }
+
+    public phase: number = 0;
 
     public tick(obj: TickerReturnData) {
         // super.tick(obj);
