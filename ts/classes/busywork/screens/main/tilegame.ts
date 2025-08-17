@@ -229,18 +229,16 @@ export class TileGame extends Screen {
         this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
         this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
 
-        this.updateGridSize(true);
 
 
         glob.debug = this.debug;
 
         window.addEventListener('resize', () => {
-            this.updateScale();
             glob.mobile = window.innerWidth < window.innerHeight;
+            this.updateGridSize(true);
         });
 
-        this.updateScale();
-
+        this.updateGridSize(true);
 
         this.addState('atdesk', false,
             () => {

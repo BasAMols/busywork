@@ -28,8 +28,6 @@ export class Boss extends Walker {
             { to: new Vector2(350, 220), speed: 0.7, condition: 500 },
             {
                 to: new Vector2(350, 220), speed: 0.7, condition: () => {
-                    console.log(game.computer.completed, game.computer.target);
-                    
                     if (game.computer.completed >= game.computer.target) {
                         game.computer.completed -= game.computer.target;
                         this.waitTime = 0;

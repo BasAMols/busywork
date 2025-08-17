@@ -20,8 +20,6 @@ export class Movement {
     public tick(obj: TickerReturnData) {
         const cycle = this.cycle[this.index];
 
-        console.log(this.state);
-        
         if (this.state === 'walking') {
             this.move(cycle, obj);
         }

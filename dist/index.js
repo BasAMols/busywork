@@ -1477,7 +1477,6 @@ var Movement = class {
   }
   tick(obj) {
     const cycle = this.cycle[this.index];
-    console.log(this.state);
     if (this.state === "walking") {
       this.move(cycle, obj);
     }
@@ -1767,7 +1766,6 @@ var Boss = class extends Walker {
         to: new Vector2(350, 220),
         speed: 0.7,
         condition: () => {
-          console.log(game.computer.completed, game.computer.target);
           if (game.computer.completed >= game.computer.target) {
             game.computer.completed -= game.computer.target;
             this.waitTime = 0;
@@ -2890,13 +2888,12 @@ var TileGame = class extends Screen {
     this.grid.append(this.gameover = new Gameover(this, [1, 1, 1, 1]));
     this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
     this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
-    this.updateGridSize(true);
     glob.debug = this.debug;
     window.addEventListener("resize", () => {
-      this.updateScale();
       glob.mobile = window.innerWidth < window.innerHeight;
+      this.updateGridSize(true);
     });
-    this.updateScale();
+    this.updateGridSize(true);
     this.addState(
       "atdesk",
       false,
