@@ -135,7 +135,7 @@ export class Computer extends Section {
         this.cursor.visible = false;
         this.setCode('012');
         this.setTT('');
-        this.completed = 0;
+        this.completed = 2;
     }
 
     public _text: string = '';
@@ -145,7 +145,7 @@ export class Computer extends Section {
         this._code = code;
     }
 
-    private _completed: number = 0;
+    private _completed: number = 2;
     public set completed(value: number) {
         this.textElement2.setText(value.toString().padStart(2, '0')+'/'+this.target.toString().padStart(2, '0'));
         this._completed = value;
@@ -222,9 +222,11 @@ export class Computer extends Section {
         super.tick(obj);
         this.scanline.transform.setPosition(new Vector2(0, (obj.total % 4000) / 4000 * 700 - 100));
 
-        if (this.parent.office.tired > 0.25) {
+        let t = (this.parent.office.tired-0.5)*2;
+
+        if (t > 0.25) {
             this.setStyle({
-                filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.2)*Math.sin(obj.total*0.001 + 0.2)*this.parent.office.tired)*4}px)`,
+                filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.2)*Math.sin(obj.total*0.001 + 0.2)*t)*4}px)`,
             });
         } else {
             this.setStyle({

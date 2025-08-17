@@ -11,10 +11,10 @@ import { getBigKeyboard } from './asset';
 export class Keyboard extends Section {
 
     get sitter() {
-        return this.parent.office.sitter
+        return this.parent.office.sitter;
     };
     get computer() {
-        return this.parent.computer
+        return this.parent.computer;
     };
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(450, 230), {
@@ -23,8 +23,6 @@ export class Keyboard extends Section {
             justifyContent: 'flex-start',
             overflow: 'hidden',
         }, gridParams);
-
-
 
 
         this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
@@ -43,9 +41,11 @@ export class Keyboard extends Section {
 
     tick(obj: TickerReturnData) {
         super.tick(obj);
-            if (this.parent.office.tired > 0.25) {
-        this.setStyle({
-                filter: `blur(${Ease.inOutCubic(Math.sin(obj.total*0.0001 + 0.2)*Math.sin(obj.total*0.001 + 0.2)*this.parent.office.tired)*4}px)`,
+
+        let t = (this.parent.office.tired-0.5)*2;
+        if (t > 0.25) {
+            this.setStyle({
+                filter: `blur(${Ease.inOutCubic(Math.sin(obj.total * 0.0001 + 0.2) * Math.sin(obj.total * 0.001 + 0.2) * t) * 4}px)`,
             });
         } else {
             this.setStyle({

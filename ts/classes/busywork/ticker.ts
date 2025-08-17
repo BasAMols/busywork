@@ -2,7 +2,7 @@ import { Game, glob } from './base';
 import { Timer } from './events';
 
 export type TickerReturnData = {
-    interval: number, intervalS3: number, intervalS10: number, intervalS20: number, total: number, frameRate: number, frame: number, maxRate: number, time: number; 
+    interval: number, intervalS3: number, intervalS10: number, intervalS20: number, totalTime: number, total: number, frameRate: number, frame: number, maxRate: number, time: number; 
 };
 export type TickerCallback = (obj: TickerReturnData) => void;
 export class Ticker {
@@ -56,7 +56,7 @@ export class Ticker {
         return Math.abs(interval - average) > 20?interval: average;
     }
 
-    private frame(timeStamp: number) {
+    public frame(timeStamp: number) {
 
         if (this.running) {
             const interval = timeStamp - this.pTime;
@@ -72,6 +72,7 @@ export class Ticker {
             glob.frame = this.frameN;
             const o = {
                 interval,
+                totalTime: this.pTime - this.sTime ,
                 total: this.eTime,
                 frameRate: 1000 / interval,
                 frame: this.frameN,
@@ -103,5 +104,9 @@ export class Ticker {
 
     public add(callback: TickerCallback) {
         this.callbacks.push(callback);
+    }
+
+    public stop() {
+        this.running = false;
     }
 }

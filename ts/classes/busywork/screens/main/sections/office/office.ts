@@ -4,6 +4,7 @@ import { Ease } from '../../../../../math/easings';
 import { Utils } from '../../../../../math/util';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../ticker';
+import { TileGame } from '../../tilegame';
 import { Section } from '../../util/section';
 import { Chair, getDesk } from './furniture';
 import { Boss } from './people/boss';
@@ -77,7 +78,7 @@ export class Office extends Section {
     chair: Chair;
     overlay: HTML;
 
-    public constructor(gridParams: ConstructorParameters<typeof Section>[2]) {
+    public constructor(private game: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(700, 600), {
             backgroundColor: '#354c59',
             width: '100%',
@@ -174,7 +175,7 @@ export class Office extends Section {
         wrap.append(new Sitter({ initialPosition: new Vector2(170, 430), hair: 'none', initialRotation: -90, armPosition: [1, 0] }) as Sitter);
 
 
-        this.npc = new Boss(new Vector2(350, 700), 0, 'half');
+        this.npc = new Boss(game, new Vector2(350, 700), 0, 'half');
         wrap.append(this.npc);
 
         this.overlay = this.append(new HTML({
@@ -205,7 +206,7 @@ export class Office extends Section {
             }
         });
 
-        this.tired = 0.2;
+        this.tired = 0.15;
     }
 
     public _tired: number = 0;
@@ -214,26 +215,29 @@ export class Office extends Section {
         this.overlay.setStyle({
             boxShadow: `inset 0px 0px 290px ${(Ease.inOutCubic(this._tired) * 360) - 180}px  #00000080`,
         });
+        if (this.tired >= 1) {
+            this.game.addState('gameover', true);
+        }
     }
     public get tired() {
         return this._tired;
     }
 
     public tick(obj: TickerReturnData) {
-
-
         super.tick(obj);
 
-        this.tired += obj.interval * 0.000003;
+        this.tired += obj.interval * 0.000002;
 
         if (obj.frame % 5 === 0) {
 
-            if (this.tired > 0.25) {
+            let t = (this.tired-0.5)*2;
+
+            if (t > 0.25) {
                 this.setStyle({
-                    filter: `blur(${Ease.inOutCubic(Math.sin(obj.total * 0.0001 + 0.3) * Math.sin(obj.total * 0.001 + 0.3) * this.tired) * 2}px)`,
+                    filter: `blur(${Ease.inOutCubic(Math.sin(obj.total * 0.0001 + 0.3) * Math.sin(obj.total * 0.001 + 0.3) * t) * 2}px)`,
                 });
                 this.overlay.setStyle({
-                    backgroundColor: `rgba(0, 0, 0, ${Math.sin(obj.total * 0.0001) * Math.sin(obj.total * 0.001) * Ease.inOutCubic(this._tired) * 0.3})`,
+                    backgroundColor: `rgba(0, 0, 0, ${Math.sin(obj.total * 0.0001) * Math.sin(obj.total * 0.001) * Ease.inOutCubic(t) * 0.3})`,
                 });
             } else {
                 this.setStyle({

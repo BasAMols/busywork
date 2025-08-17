@@ -7,18 +7,21 @@ export class Movement {
 
     private state: 'walking' | 'waiting' = 'walking';
     private index: number = 0;
+    private condition: () => boolean = undefined;
 
     public constructor(private actor: Walker, private key: string, private cycle: {
         to: Vector2;
         speed: number;
-        time: number;
-    }[], private callback: (speed: number, velocity: Vector2, state: 'walking' | 'waiting', time: number, cycle: number) => void, state: number = 0) {
+        condition: number | (() => boolean);
+    }[], private callback: (speed: number, velocity: Vector2, state: 'walking' | 'waiting', cycle: number) => void, state: number = 0) {
         this.index = state;
     }
 
     public tick(obj: TickerReturnData) {
         const cycle = this.cycle[this.index];
 
+        console.log(this.state);
+        
         if (this.state === 'walking') {
             this.move(cycle, obj);
         }
@@ -29,8 +32,17 @@ export class Movement {
     }
 
     private wait(cycle: typeof this.cycle[number]) {
-        this.callback(0, new Vector2(0, 0), 'waiting', cycle.time - glob.timer.currentTime, this.index);
+
+        if (this.condition) {
+            if (this.condition()) {
+                this.condition = undefined;
+                this.next();
+            }
+        } else {
+            this.callback(0, new Vector2(0, 0), 'waiting', this.index);
+        }
     }
+
 
     private move(cycle: typeof this.cycle[number], obj: TickerReturnData) {
         const velocity = cycle.to.sub(this.actor.transform.position).normalize().scale(cycle.speed);
@@ -38,19 +50,30 @@ export class Movement {
 
         this.actor.move(obj, velocity, cycle.speed);
 
-        this.callback(cycle.speed, velocity, 'walking', 0, this.index);
+        this.callback(cycle.speed, velocity, 'walking', this.index);
+
 
         if (this.actor.transform.position.distance(cycle.to) < 1) {
             this.state = 'waiting';
 
-            if (cycle.time < 1) {
-                this.next();
-            } else {
-                glob.timer.add(`${this.key}-walk`, cycle.time, () => {
+            if (typeof cycle.condition === 'function') {
+                if (cycle.condition()) {
                     this.next();
-                });
+                } else {
+                    this.condition = cycle.condition;
+                }
+            } else {
+                if (cycle.condition < 1) {
+                    this.next();
+                } else {
+                    glob.timer.add(`${this.key}-walk`, cycle.condition, () => {
+                        this.next();
+                    });
+                }
             }
         }
+
+
     }
 
     private next() {

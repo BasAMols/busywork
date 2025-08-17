@@ -370,6 +370,9 @@ var HTML = class {
   get visible() {
     return this._visible;
   }
+  set opacity(opacity) {
+    this.dom.style.opacity = opacity.toString();
+  }
   tick(obj) {
     if (this.visible) {
       this.children.forEach((child) => {
@@ -475,6 +478,7 @@ var Ticker = class {
       glob.frame = this.frameN;
       const o = {
         interval,
+        totalTime: this.pTime - this.sTime,
         total: this.eTime,
         frameRate: 1e3 / interval,
         frame: this.frameN,
@@ -501,6 +505,9 @@ var Ticker = class {
   }
   add(callback) {
     this.callbacks.push(callback);
+  }
+  stop() {
+    this.running = false;
   }
 };
 
@@ -703,7 +710,7 @@ var Computer = class extends Section {
     this.parent = parent;
     this._text = "";
     this._code = void 0;
-    this._completed = 0;
+    this._completed = 2;
     this.target = 3;
     this.screen = this.append(new HTML({
       style: {
@@ -809,7 +816,7 @@ var Computer = class extends Section {
     this.cursor.visible = false;
     this.setCode("012");
     this.setTT("");
-    this.completed = 0;
+    this.completed = 2;
   }
   get sitter() {
     return this.parent.office.sitter;
@@ -875,9 +882,10 @@ var Computer = class extends Section {
   tick(obj) {
     super.tick(obj);
     this.scanline.transform.setPosition(new Vector2(0, obj.total % 4e3 / 4e3 * 700 - 100));
-    if (this.parent.office.tired > 0.25) {
+    let t = (this.parent.office.tired - 0.5) * 2;
+    if (t > 0.25) {
       this.setStyle({
-        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
+        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * t) * 4, "px)")
       });
     } else {
       this.setStyle({
@@ -1001,9 +1009,10 @@ var Keyboard = class extends Section {
   }
   tick(obj) {
     super.tick(obj);
-    if (this.parent.office.tired > 0.25) {
+    let t = (this.parent.office.tired - 0.5) * 2;
+    if (t > 0.25) {
       this.setStyle({
-        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * this.parent.office.tired) * 4, "px)")
+        filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.2) * Math.sin(obj.total * 1e-3 + 0.2) * t) * 4, "px)")
       });
     } else {
       this.setStyle({
@@ -1463,10 +1472,12 @@ var Movement = class {
     this.callback = callback;
     this.state = "walking";
     this.index = 0;
+    this.condition = void 0;
     this.index = state;
   }
   tick(obj) {
     const cycle = this.cycle[this.index];
+    console.log(this.state);
     if (this.state === "walking") {
       this.move(cycle, obj);
     }
@@ -1475,20 +1486,35 @@ var Movement = class {
     }
   }
   wait(cycle) {
-    this.callback(0, new Vector2(0, 0), "waiting", cycle.time - glob.timer.currentTime, this.index);
+    if (this.condition) {
+      if (this.condition()) {
+        this.condition = void 0;
+        this.next();
+      }
+    } else {
+      this.callback(0, new Vector2(0, 0), "waiting", this.index);
+    }
   }
   move(cycle, obj) {
     const velocity = cycle.to.sub(this.actor.transform.position).normalize().scale(cycle.speed);
     this.actor.move(obj, velocity, cycle.speed);
-    this.callback(cycle.speed, velocity, "walking", 0, this.index);
+    this.callback(cycle.speed, velocity, "walking", this.index);
     if (this.actor.transform.position.distance(cycle.to) < 1) {
       this.state = "waiting";
-      if (cycle.time < 1) {
-        this.next();
-      } else {
-        glob.timer.add("".concat(this.key, "-walk"), cycle.time, () => {
+      if (typeof cycle.condition === "function") {
+        if (cycle.condition()) {
           this.next();
-        });
+        } else {
+          this.condition = cycle.condition;
+        }
+      } else {
+        if (cycle.condition < 1) {
+          this.next();
+        } else {
+          glob.timer.add("".concat(this.key, "-walk"), cycle.condition, () => {
+            this.next();
+          });
+        }
       }
     }
   }
@@ -1724,18 +1750,47 @@ var Walker = class extends HTML {
 
 // ts/classes/busywork/screens/main/sections/office/people/boss.ts
 var Boss = class extends Walker {
-  constructor(position, rotation, hair = "full") {
+  constructor(game, position, rotation, hair = "full") {
     super({ initialPosition: position, initialRotation: rotation, hair, walkspeed: 0.7 });
     this.rotation = 0;
     this.rotationTarget = 0;
+    this.waitTime = 0;
+    this.waitTimeMax = 1e4;
+    this._hasPaper = true;
     this.phase = 0;
     this.movement = new Movement(this, "boss", [
-      { to: new Vector2(350, 550), speed: 0.7, time: 100 },
-      { to: new Vector2(200, 500), speed: 0.7, time: 3e3 },
-      { to: new Vector2(450, 300), speed: 0.7, time: 3e3 },
-      { to: new Vector2(350, 220), speed: 0.7, time: 3e3 },
-      { to: new Vector2(350, 700), speed: 1, time: 2e4 }
-    ], (speed, velocity, state, time, phase) => {
+      { to: new Vector2(350, 550), speed: 0.7, condition: 1e3 },
+      { to: new Vector2(200, 500), speed: 0.7, condition: 1e3 },
+      { to: new Vector2(450, 300), speed: 0.7, condition: 1e3 },
+      { to: new Vector2(350, 220), speed: 0.7, condition: 500 },
+      {
+        to: new Vector2(350, 220),
+        speed: 0.7,
+        condition: () => {
+          console.log(game.computer.completed, game.computer.target);
+          if (game.computer.completed >= game.computer.target) {
+            game.computer.completed -= game.computer.target;
+            this.waitTime = 0;
+            this.hasPaper = true;
+            return true;
+          }
+          this.waitTime += glob.ticker.interval;
+          if (this.waitTime > this.waitTimeMax) {
+            game.addState("gameover", true);
+          }
+          return false;
+        }
+      },
+      { to: new Vector2(350, 700), speed: 1, condition: 2e4 },
+      {
+        to: new Vector2(350, 700),
+        speed: 1,
+        condition: () => {
+          this.hasPaper = false;
+          return true;
+        }
+      }
+    ], (speed, velocity, state, phase) => {
       this.phase = phase;
       if (state === "walking") {
         this.rotationTarget = velocity.angle();
@@ -1745,6 +1800,21 @@ var Boss = class extends Walker {
         this.idle();
       }
     }, 0);
+    this.transform.setPosition(new Vector2(350, 1500));
+    this.paper = getPaper(new Vector2(-2, -50), 7, true);
+    this.paper.transform.setScale(new Vector2(1, 0.8));
+    this.person.append(this.paper);
+    this.hasPaper = false;
+  }
+  get hasPaper() {
+    return this._hasPaper;
+  }
+  set hasPaper(value) {
+    this._hasPaper = value;
+    this.paper.visible = value;
+    if (!value) {
+      this.person.armPosition = [0, 0];
+    }
   }
   tick(obj) {
     this.movement.tick(obj);
@@ -1756,6 +1826,9 @@ var Boss = class extends Walker {
       }
       this.rotation = Utils.lerp(this.rotation, this.rotationTarget, 0.05);
       this.transform.setRotation(this.rotation);
+    }
+    if (this.hasPaper) {
+      this.person.armPosition = [0.4, this.person.armPosition[1]];
     }
   }
 };
@@ -1841,7 +1914,7 @@ var Sitter = class extends Walker {
 
 // ts/classes/busywork/screens/main/sections/office/office.ts
 var Office = class extends Section {
-  constructor(gridParams) {
+  constructor(game, gridParams) {
     super(new Vector2(700, 600), {
       backgroundColor: "#354c59",
       width: "100%",
@@ -1850,6 +1923,7 @@ var Office = class extends Section {
       display: "flex",
       justifyContent: "center"
     }, gridParams);
+    this.game = game;
     this.mouse = false;
     this.blockers = [
       //walls
@@ -1968,7 +2042,7 @@ var Office = class extends Section {
     wrap.append(getCoffeeMachine(new Vector2(590, 490), 40, 9, 40));
     wrap.append(new Sitter({ initialPosition: new Vector2(520, 240), hair: "full", initialRotation: 120, armPosition: [0, 0] }));
     wrap.append(new Sitter({ initialPosition: new Vector2(170, 430), hair: "none", initialRotation: -90, armPosition: [1, 0] }));
-    this.npc = new Boss(new Vector2(350, 700), 0, "half");
+    this.npc = new Boss(game, new Vector2(350, 700), 0, "half");
     wrap.append(this.npc);
     this.overlay = this.append(new HTML({
       style: {
@@ -1995,27 +2069,31 @@ var Office = class extends Section {
         this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
       }
     });
-    this.tired = 0.2;
+    this.tired = 0.15;
   }
   set tired(value) {
     this._tired = Utils.clamp(value, 0, 1);
     this.overlay.setStyle({
       boxShadow: "inset 0px 0px 290px ".concat(Ease.inOutCubic(this._tired) * 360 - 180, "px  #00000080")
     });
+    if (this.tired >= 1) {
+      this.game.addState("gameover", true);
+    }
   }
   get tired() {
     return this._tired;
   }
   tick(obj) {
     super.tick(obj);
-    this.tired += obj.interval * 3e-6;
+    this.tired += obj.interval * 2e-6;
     if (obj.frame % 5 === 0) {
-      if (this.tired > 0.25) {
+      let t = (this.tired - 0.5) * 2;
+      if (t > 0.25) {
         this.setStyle({
-          filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.3) * Math.sin(obj.total * 1e-3 + 0.3) * this.tired) * 2, "px)")
+          filter: "blur(".concat(Ease.inOutCubic(Math.sin(obj.total * 1e-4 + 0.3) * Math.sin(obj.total * 1e-3 + 0.3) * t) * 2, "px)")
         });
         this.overlay.setStyle({
-          backgroundColor: "rgba(0, 0, 0, ".concat(Math.sin(obj.total * 1e-4) * Math.sin(obj.total * 1e-3) * Ease.inOutCubic(this._tired) * 0.3, ")")
+          backgroundColor: "rgba(0, 0, 0, ".concat(Math.sin(obj.total * 1e-4) * Math.sin(obj.total * 1e-3) * Ease.inOutCubic(t) * 0.3, ")")
         });
       } else {
         this.setStyle({
@@ -2082,10 +2160,15 @@ var StatBar = class _StatBar extends Section {
     }, gridParams);
     this.parent = parent;
     this.stats = [];
-    this.addStat(_StatBar.getStatBlock("person_apron", 50), 0, () => {
-      return Number(!this.parent.state("bossinroom"));
+    this.addStat(_StatBar.getStatBlock("person_apron", 50), 0, 0.5, () => {
+      return Number(!this.parent.getState("bossinroom"));
     });
-    this.addStat(_StatBar.getStatBlock("battery_android_frame_bolt", 50), 0, () => {
+    this.addStat(_StatBar.getStatBlock("unknown_document", 50), 0, 0.95, () => {
+      return Utils.clamp(1 - this.parent.office.npc.waitTime / this.parent.office.npc.waitTimeMax, 0, 1);
+    }, (element, value) => {
+      element.setStyle({ backgroundColor: "rgb(".concat(Math.round(153 + (74 - 153) * value), " ").concat(Math.round(60 + (114 - 60) * value), " ").concat(Math.round(60 + (160 - 60) * value), ")") });
+    });
+    this.addStat(_StatBar.getStatBlock("battery_android_frame_bolt", 50), 0, 0.5, () => {
       return 1 - this.parent.office.tired;
     }, (element, value) => {
       var _a;
@@ -2118,11 +2201,12 @@ var StatBar = class _StatBar extends Section {
       ]
     });
   }
-  addStat(element, value, getter, setter) {
+  addStat(element, value, showOn, getter, setter) {
     this.append(element);
     this.stats.push({
       value,
       element,
+      showOn,
       getter,
       setter
     });
@@ -2136,13 +2220,13 @@ var StatBar = class _StatBar extends Section {
         (_a = stat.setter) == null ? void 0 : _a.call(stat, stat.element, stat.value);
         stat.element.setStyle({
           // order: index.toString(),
-          width: stat.value < 0.5 ? "90px" : "0px",
-          transition: stat.value < 0.5 ? "margin-top 0.5s 0.5s ease-in-out, width 0.5s ease-in-out, opacity 0.5s 0.5s ease-in-out" : "margin-top 0.5s ease-in-out, width 0.5s 0.5s ease-in-out, opacity 0.5s ease-in-out"
+          width: stat.value < stat.showOn ? "90px" : "0px",
+          transition: stat.value < stat.showOn ? "margin-top 0.5s 0.5s ease-in-out, width 0.5s ease-in-out, opacity 0.5s 0.5s ease-in-out" : "margin-top 0.5s ease-in-out, width 0.5s 0.5s ease-in-out, opacity 0.5s ease-in-out"
         });
         stat.element.setStyle({
-          marginTop: stat.value < 0.5 ? "0px" : "20px",
-          opacity: stat.value < 0.5 ? "1" : "0",
-          width: stat.value < 0.5 ? "90px" : "0px"
+          marginTop: stat.value < stat.showOn ? "0px" : "20px",
+          opacity: stat.value < stat.showOn ? "1" : "0",
+          width: stat.value < stat.showOn ? "90px" : "0px"
         });
       });
     }
@@ -2527,7 +2611,8 @@ var Coffee = class extends Section {
     super(new Vector2(400, 600), {
       backgroundColor: "#354c59",
       boxShadow: "0px 0px 200px #0000004a",
-      justifyContent: "flex-start"
+      justifyContent: "flex-start",
+      overflow: "hidden"
     }, gridParams);
     this.parent = parent;
     this.append(new Tile({
@@ -2655,6 +2740,50 @@ var Grid = class extends HTML {
   }
 };
 
+// ts/classes/busywork/screens/main/sections/gameover.ts
+var Gameover = class extends Section {
+  constructor(parent, gridParams) {
+    super(new Vector2(700, 20), {
+      transition: "width 0.8s ease-in-out, height 0.8s ease-in-out, opacity 0.8s ease-in-out",
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "10px",
+      boxSizing: "border-box",
+      backgroundColor: "transparent",
+      boxShadow: "none",
+      pointerEvents: "none",
+      background: "#3c5561",
+      width: "100%",
+      height: "100%",
+      color: "#fff",
+      fontSize: "90px",
+      padding: "0 10px",
+      overflow: "hidden",
+      fontFamily: "Noto Sans",
+      fontWeight: "500",
+      textShadow: "0px 0px 10px black"
+    }, gridParams);
+    this.parent = parent;
+    this.opacity = 0;
+    this.setText("GAME OVER");
+  }
+  trigger() {
+    this.opacity = 0.8;
+    glob.game.ticker.stop();
+    this.parent.addState("atdesk", false);
+    this.parent.addState("atcoffeemachine", false);
+    this.parent.office.tired = 0;
+    this.parent.updateGridSize(true);
+  }
+  tick(obj) {
+    if (this.parent.getState("gameover")) {
+      this.trigger();
+    }
+  }
+};
+
 // ts/classes/busywork/screens/main/tilegame.ts
 var GridManager = class {
   constructor(grid, columns, rows, gap = 20) {
@@ -2666,14 +2795,24 @@ var GridManager = class {
     this.rows = rows;
     this.updateGrid();
   }
-  setColumn(index, width) {
+  setColumnWidth(index, width) {
     this.columns[index] = width;
   }
   setColumns(columns) {
     this.columns = columns;
   }
-  setRow(index, height) {
+  setRowHeight(index, height) {
     this.rows[index] = height;
+  }
+  setBulkRowHeight(height, except = []) {
+    this.rows.forEach((row, index) => {
+      this.setRowHeight(index, except.includes(index) ? row : height);
+    });
+  }
+  setBulkColumnWidth(width, except = []) {
+    this.columns.forEach((column, index) => {
+      this.setColumnWidth(index, except.includes(index) ? column : width);
+    });
   }
   setRows(rows) {
     this.rows = rows;
@@ -2746,8 +2885,9 @@ var TileGame = class extends Screen {
     this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
     this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
     this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-    this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
+    this.grid.append(this.office = new Office(this, [1, 1, 7, 1]), true);
     this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
+    this.grid.append(this.gameover = new Gameover(this, [1, 1, 1, 1]));
     this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
     this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
     this.updateGridSize(true);
@@ -2785,7 +2925,7 @@ var TileGame = class extends Screen {
       "bossinroom",
       false,
       () => {
-        return this.office.npc.phase > 0 && this.office.npc.phase < 4;
+        return this.office.npc.phase > 0 && this.office.npc.phase < 5;
       }
     );
     this.addState(
@@ -2805,7 +2945,7 @@ var TileGame = class extends Screen {
     };
     (_b = (_a = this.stateData[state]).onChange) == null ? void 0 : _b.call(_a, initial);
   }
-  state(state) {
+  getState(state) {
     var _a;
     return (_a = this.stateData[state]) == null ? void 0 : _a.value;
   }
@@ -2817,8 +2957,9 @@ var TileGame = class extends Screen {
         this.computer.updateGrid([1, 1, 3, 1]);
         this.keyboard.updateGrid([1, 1, 5, 1]);
         this.office.updateGrid([1, 1, 7, 1]);
+        this.gameover.updateGrid([1, 1, 7, 1]);
         this.coffee.updateGrid([1, 1, 11, 1]);
-        this.statBar.updateGrid([1, 1, 9, 1]);
+        this.statBar.updateGrid([1, 1, 7, 1]);
         this.gridManager.setColumns([700]);
         this.gridManager.setRows([0, 350, 230, 600, 1, 600]);
       } else {
@@ -2827,25 +2968,27 @@ var TileGame = class extends Screen {
         this.keyboard.updateGrid([1, 1, 5, 1]);
         this.debug.updateGrid([1, 5, 1, 1]);
         this.office.updateGrid([3, 1, 3, 3]);
+        this.gameover.updateGrid([3, 1, 3, 3]);
         this.statBar.updateGrid([3, 1, 7, 1]);
         this.gridManager.setColumns([450, 700, 450]);
         this.gridManager.setRows([0, 350, 230, 1]);
       }
     }
     if (this._mobile) {
-      this.gridManager.setColumn(0, this.state("atdesk") || this.state("atcoffeemachine") ? 450 : 700);
-      this.gridManager.setRow(1, this.state("atdesk") ? 350 : 0);
-      this.gridManager.setRow(2, this.state("atdesk") ? 230 : 0);
-      this.gridManager.setRow(3, this.state("atdesk") || this.state("atcoffeemachine") ? 500 : 600);
-      this.gridManager.setRow(5, this.state("atcoffeemachine") ? 600 : 0);
+      this.gridManager.setColumnWidth(0, this.getState("atdesk") || this.getState("atcoffeemachine") ? 450 : 700);
+      this.gridManager.setRowHeight(1, this.getState("atdesk") ? 350 : 0);
+      this.gridManager.setRowHeight(2, this.getState("atdesk") ? 230 : 0);
+      this.gridManager.setRowHeight(3, this.getState("atdesk") || this.getState("atcoffeemachine") ? 500 : 600);
+      this.gridManager.setRowHeight(5, this.getState("atcoffeemachine") ? 600 : 0);
       this.gridManager.updateGrid();
+      this.updateScale(this.gridManager.getSize().add(new Vector2(40, 40)));
     } else {
-      this.gridManager.setColumn(0, this.state("atdesk") ? 450 : 0);
-      this.gridManager.setColumn(1, 680);
-      this.gridManager.setColumn(2, this.state("atcoffeemachine") ? 400 : 0);
+      this.gridManager.setColumnWidth(0, this.getState("atdesk") ? 450 : 0);
+      this.gridManager.setColumnWidth(1, 680);
+      this.gridManager.setColumnWidth(2, this.getState("atcoffeemachine") ? 400 : 0);
       this.gridManager.updateGrid();
+      this.updateScale(this.gridManager.getSize().add(new Vector2(20, 80)));
     }
-    this.updateScale(this.gridManager.getSize().add(new Vector2(40, 40)));
   }
   updateScale(size = this.maxSize) {
     const windowSize = new Vector2(window.innerWidth, window.innerHeight);
@@ -2867,6 +3010,7 @@ var TileGame = class extends Screen {
   tick(obj) {
     super.tick(obj);
     this.syncStates();
+    this.gameover.tick(obj);
   }
 };
 

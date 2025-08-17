@@ -11,6 +11,7 @@ import { Debug } from './sections/debug';
 import { Grid } from '../../../element/grid';
 import { glob } from '../../base';
 import { Utils } from '../../../math/util';
+import { Gameover } from './sections/gameover';
 
 export class GridManager {
 
@@ -23,16 +24,30 @@ export class GridManager {
         this.updateGrid();
     }
 
-    setColumn(index: number, width: number) {
+    setColumnWidth(index: number, width: number) {
         this.columns[index] = width;
     }
+    
+
 
     setColumns(columns: number[]) {
         this.columns = columns;
     }
 
-    setRow(index: number, height: number) {
+    setRowHeight(index: number, height: number) {
         this.rows[index] = height;
+    }
+
+    setBulkRowHeight(height: number, except: number[] = []) {
+        this.rows.forEach((row, index) => {
+           this.setRowHeight(index, except.includes(index) ? row : height);
+        });
+    }
+
+    setBulkColumnWidth(width: number, except: number[] = []) {
+        this.columns.forEach((column, index) => {
+           this.setColumnWidth(index, except.includes(index) ? column : width);
+        });
     }
 
     setRows(rows: number[]) {
@@ -98,6 +113,7 @@ export class TileGame extends Screen {
     public keyboard: Keyboard;
     public coffee: Coffee;
     public debug: Debug;
+    public gameover: Gameover;
     public maxSize: Vector2 = new Vector2(1170, 620);
     private stateData: {
         [key: string]: {
@@ -112,7 +128,7 @@ export class TileGame extends Screen {
     grid: Grid;
     gridManager: GridManager;
 
-    addState(state: string, initial: boolean, condition?: () => boolean, onChange?: (value: boolean) => void) {
+    public addState(state: string, initial: boolean, condition?: () => boolean, onChange?: (value: boolean) => void) {
         this.stateData[state] = {
             value: initial,
             condition: condition,
@@ -121,7 +137,7 @@ export class TileGame extends Screen {
         this.stateData[state].onChange?.(initial);
     }
 
-    public state(state: string) {
+    public getState(state: string) {
         return this.stateData[state]?.value;
     }
 
@@ -137,8 +153,9 @@ export class TileGame extends Screen {
                 this.computer.updateGrid([1, 1, 3, 1]);
                 this.keyboard.updateGrid([1, 1, 5, 1]);
                 this.office.updateGrid([1, 1, 7, 1]);
+                this.gameover.updateGrid([1, 1, 7, 1]);
                 this.coffee.updateGrid([1, 1, 11, 1]);
-                this.statBar.updateGrid([1, 1, 9, 1]);
+                this.statBar.updateGrid([1, 1, 7, 1]);
                 this.gridManager.setColumns([700]);
                 this.gridManager.setRows([0, 350, 230, 600, 1, 600]);
 
@@ -149,29 +166,33 @@ export class TileGame extends Screen {
                 this.keyboard.updateGrid([1, 1, 5, 1]);
                 this.debug.updateGrid([1, 5, 1, 1]);
                 this.office.updateGrid([3, 1, 3, 3]);
+                this.gameover.updateGrid([3, 1, 3, 3]);
                 this.statBar.updateGrid([3, 1, 7, 1]);
                 this.gridManager.setColumns([450, 700, 450]);
                 this.gridManager.setRows([0, 350, 230, 1]);
             }
-    
+
         }
+       
 
         if (this._mobile) {
-            this.gridManager.setColumn(0, this.state('atdesk') || this.state('atcoffeemachine') ? 450 : 700);
-            this.gridManager.setRow(1, this.state('atdesk') ? 350 : 0);
-            this.gridManager.setRow(2, this.state('atdesk') ? 230 : 0);
-            this.gridManager.setRow(3, this.state('atdesk') || this.state('atcoffeemachine') ? 500 : 600);
-            this.gridManager.setRow(5, this.state('atcoffeemachine') ? 600 : 0);
+            this.gridManager.setColumnWidth(0, this.getState('atdesk') || this.getState('atcoffeemachine') ? 450 : 700);
+            this.gridManager.setRowHeight(1, this.getState('atdesk') ? 350 : 0);
+            this.gridManager.setRowHeight(2, this.getState('atdesk') ? 230 : 0);
+            this.gridManager.setRowHeight(3, this.getState('atdesk') || this.getState('atcoffeemachine') ? 500 : 600);
+            this.gridManager.setRowHeight(5, this.getState('atcoffeemachine') ? 600 : 0);
             this.gridManager.updateGrid();
+            this.updateScale(this.gridManager.getSize().add(new Vector2(40, 40)));
+
         } else {
-            this.gridManager.setColumn(0, this.state('atdesk') ? 450 : 0);
-            this.gridManager.setColumn(1, 680);
-            this.gridManager.setColumn(2, this.state('atcoffeemachine') ? 400 : 0);
+            this.gridManager.setColumnWidth(0, this.getState('atdesk') ? 450 : 0);
+            this.gridManager.setColumnWidth(1, 680);
+            this.gridManager.setColumnWidth(2, this.getState('atcoffeemachine') ? 400 : 0);
             this.gridManager.updateGrid();
+            this.updateScale(this.gridManager.getSize().add(new Vector2(20, 80)));
         }
 
 
-        this.updateScale(this.gridManager.getSize().add(new Vector2(40, 40)));
     }
 
     updateScale(size: Vector2 = this.maxSize) {
@@ -202,8 +223,9 @@ export class TileGame extends Screen {
         this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
         this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
         this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-        this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
+        this.grid.append(this.office = new Office(this, [1, 1, 7, 1]), true);
         this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
+        this.grid.append(this.gameover = new Gameover(this, [1, 1, 1, 1]));
         this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
         this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
 
@@ -244,7 +266,7 @@ export class TileGame extends Screen {
         );
         this.addState('bossinroom', false,
             () => {
-                return this.office.npc.phase > 0 && this.office.npc.phase < 4;
+                return this.office.npc.phase > 0 && this.office.npc.phase < 5;
             }
         );
         this.addState('bosslooking', false,
@@ -270,6 +292,9 @@ export class TileGame extends Screen {
     public tick(obj: TickerReturnData) {
         super.tick(obj);
         this.syncStates();
+
+        this.gameover.tick(obj);
+
     }
 
 }

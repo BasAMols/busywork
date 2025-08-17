@@ -119,7 +119,11 @@ export class HTML {
 
     public get visible() {
         return this._visible;
-    }   
+    }
+
+    public set opacity(opacity: number) {
+        this.dom.style.opacity = opacity.toString();
+    }
 
     public tick(obj: TRD) {
         if (this.visible) {
