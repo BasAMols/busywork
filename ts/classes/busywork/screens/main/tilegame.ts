@@ -18,6 +18,7 @@ export class TileGame extends Screen {
     public keyboard: Keyboard;
     public coffee: Coffee;
     public debug: Debug;
+    public maxSize: Vector2 = new Vector2(1170, 620);
     private stateData: {
         [key: string]: {
             value: boolean;
@@ -47,11 +48,13 @@ export class TileGame extends Screen {
 
         let w1 = 680;
         let w2 = 0;
+        this.maxSize = new Vector2(800, 620);
         if (this.state('atcoffeemachine')) {
             w2 = 400;
+            this.maxSize = new Vector2(1170, 620);
         } else if (this.state('atdesk')) {
-            w1 = 500;
             w2 = 450;
+            this.maxSize = new Vector2(1170, 620);
         }
 
         if (w2) {
@@ -76,6 +79,14 @@ export class TileGame extends Screen {
         });
 
         this.grid.setTemplateColumns(`${w1}px ${w2}px`);
+        this.updateScale();
+    }
+
+    updateScale() {
+        const windowSize = new Vector2(window.innerWidth, window.innerHeight);
+        const xf = windowSize.x / this.maxSize.x;
+        const yf = windowSize.y / this.maxSize.y;
+        this.grid.transform.setScale(new Vector2(Math.min(xf, yf), Math.min(xf, yf)));
     }
 
     public constructor(private game: Busywork) {
@@ -83,23 +94,33 @@ export class TileGame extends Screen {
 
         this.append(this.grid = new Grid({
             columns: '700px 450px',
-            rows: '50px 350px 230px 0px',
+            rows: '0px 350px 230px 0px',
             justifyContent: 'center',
             alignItems: 'center',
             gap: 20,
             style: {
-                width: '100%',
-                height: '100%',
-                transition: 'grid-template-columns 0.6s ease-in-out, grid-template-rows 0.6s ease-in-out',
+                width: `${this.maxSize.x}px`,
+                height: `${this.maxSize.y}px`,
+                transition: 'grid-template-columns 1.2s ease-in-out, grid-template-rows 1.2s ease-in-out, transform 1.2s ease-in-out',
+            },
+            transform: {
+                size: this.maxSize,
+                anchor: new Vector2(0.5, 0.5),
             }
-        }));
+        }), true);
         this.grid.append(this.debug = new Debug(this, [1, 2, 1, 1]));
         glob.debug = this.debug;
-        this.grid.append(this.office = new Office([1, 1, 2, 2]));
+        this.grid.append(this.office = new Office([1, 1, 2, 2]), true);
         this.grid.append(this.coffee = new Coffee(this, [2, 1, 2, 2]));
         this.grid.append(this.computer = new Computer(this, [2, 1, 2, 1]));
         this.grid.append(this.keyboard = new Keyboard(this, [2, 1, 3, 1]));
         this.grid.append(this.statBar = new StatBar(this, [1, 1, 4, 1]));
+
+        window.addEventListener('resize', () => {
+            this.updateScale();
+        });
+
+        this.updateScale();
 
 
         this.addState('atdesk', false,

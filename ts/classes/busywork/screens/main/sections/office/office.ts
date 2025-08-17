@@ -80,7 +80,6 @@ export class Office extends Section {
     public constructor(gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(700, 600), {
             backgroundColor: '#354c59',
-            transition: 'width 0.6s ease-in-out, margin-left 0.6s ease-in-out',
             width: '100%',
             height: '600px',
             overflow: 'hidden',

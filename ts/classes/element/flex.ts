@@ -24,4 +24,13 @@ export class Flex extends HTML {
         });
         this.setStyle(options.style || {});
     }
+
+    public set visible(visible: boolean) {
+        this._visible = visible;
+        this.dom.style.display = visible ? 'flex' : 'none';
+    }
+
+    public get visible() {
+        return this._visible;
+    }
 }

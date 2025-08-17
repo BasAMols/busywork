@@ -10,7 +10,6 @@ export class Coffee extends Section {
         super(new Vector2(400, 600), {
             backgroundColor: '#354c59',
             boxShadow: '0px 0px 200px #0000004a',
-            transition: 'width 0.6s ease-in-out',
             width: '400px',
             justifyContent: 'flex-start',
         }, gridParams);

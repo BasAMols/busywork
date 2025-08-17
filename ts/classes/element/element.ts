@@ -115,7 +115,7 @@ export class HTML {
         this.dom.innerHTML = html;
     }
 
-    private _visible: boolean = true;
+    protected _visible: boolean = true;
 
     public set visible(visible: boolean) {
         this._visible = visible;

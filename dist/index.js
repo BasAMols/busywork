@@ -540,14 +540,6 @@ var Game2 = class extends HTML {
   }
 };
 
-// ts/classes/element/screen.ts
-var Screen = class extends HTML {
-  constructor(key) {
-    super({ type: "div", style: { width: "100%", height: "100%", backgroundColor: "#2a3e48" }, classList: ["screen"] });
-    this.key = key;
-  }
-};
-
 // ts/classes/element/flex.ts
 var Flex = class extends HTML {
   constructor(options) {
@@ -561,6 +553,32 @@ var Flex = class extends HTML {
       gap: "".concat(options.gap, "px")
     });
     this.setStyle(options.style || {});
+  }
+  set visible(visible) {
+    this._visible = visible;
+    this.dom.style.display = visible ? "flex" : "none";
+  }
+  get visible() {
+    return this._visible;
+  }
+};
+
+// ts/classes/element/screen.ts
+var Screen = class extends Flex {
+  constructor(key) {
+    super({
+      justifyContent: "center",
+      alignItems: "center",
+      flexDirection: "column",
+      style: {
+        width: "100%",
+        height: "100%",
+        backgroundColor: "#2a3e48",
+        transition: "transform 0.6s ease-in-out"
+      },
+      classList: ["screen"]
+    });
+    this.key = key;
   }
 };
 
@@ -640,7 +658,8 @@ var Section = class extends HTML {
       style: __spreadValues({
         width: size.x + "px",
         height: size.y + "px",
-        boxShadow: "0px 0px 200px #0000004a",
+        // boxShadow: '0px 0px 200px #0000004a',
+        transition: "width 1.2s ease-in-out, margin-left 1.2s ease-in-out",
         overflow: "hidden",
         borderRadius: "10px",
         gridColumn: gridParams[0] + " / span " + gridParams[1],
@@ -659,7 +678,6 @@ var Computer = class extends Section {
     super(new Vector2(450, 350), {
       backgroundColor: "#90857f",
       boxShadow: "0px 0px 200px #0000004a",
-      transition: "width 0.6s ease-in-out",
       width: "100%",
       height: "350px",
       justifyContent: "flex-start"
@@ -930,8 +948,7 @@ var Keyboard = class extends Section {
     super(new Vector2(450, 230), {
       width: "100%",
       height: "230px",
-      justifyContent: "flex-start",
-      transition: "width 0.6s ease-in-out"
+      justifyContent: "flex-start"
     }, gridParams);
     this.parent = parent;
     this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
@@ -1677,7 +1694,6 @@ var Walker = class extends HTML {
     this.person.forceArmTwist = [0, 0];
   }
   move(obj, direction, speed) {
-    glob.debug.setText("".concat(direction.x.toFixed(2), " ").concat(direction.y.toFixed(2), " ").concat(speed.toFixed(2), " ").concat(obj.frameRate.toFixed(2), " ").concat(obj.interval.toFixed(2), " ").concat(obj.intervalS20.toFixed(2)));
     const normalisedSpeed = speed * obj.intervalS20 * 0.15;
     this.transform.setPosition(this.transform.position.add(direction.normalize().scale(normalisedSpeed)));
     this.walkCycle(normalisedSpeed);
@@ -1804,7 +1820,6 @@ var Office = class extends Section {
   constructor(gridParams) {
     super(new Vector2(700, 600), {
       backgroundColor: "#354c59",
-      transition: "width 0.6s ease-in-out, margin-left 0.6s ease-in-out",
       width: "100%",
       height: "600px",
       overflow: "hidden",
@@ -2025,7 +2040,6 @@ var Icon = class extends HTML {
 var StatBar = class _StatBar extends Section {
   constructor(parent, gridParams) {
     super(new Vector2(700, 10), {
-      transition: "width 0.8s ease-in-out, height 0.8s ease-in-out",
       display: "flex",
       flexDirection: "row",
       alignItems: "center",
@@ -2486,7 +2500,6 @@ var Coffee = class extends Section {
     super(new Vector2(400, 600), {
       backgroundColor: "#354c59",
       boxShadow: "0px 0px 200px #0000004a",
-      transition: "width 0.6s ease-in-out",
       width: "400px",
       justifyContent: "flex-start"
     }, gridParams);
@@ -2611,26 +2624,35 @@ var TileGame = class extends Screen {
   constructor(game) {
     super("test");
     this.game = game;
+    this.maxSize = new Vector2(1170, 620);
     this.stateData = {};
     this.append(this.grid = new Grid({
       columns: "700px 450px",
-      rows: "50px 350px 230px 0px",
+      rows: "0px 350px 230px 0px",
       justifyContent: "center",
       alignItems: "center",
       gap: 20,
       style: {
-        width: "100%",
-        height: "100%",
-        transition: "grid-template-columns 0.6s ease-in-out, grid-template-rows 0.6s ease-in-out"
+        width: "".concat(this.maxSize.x, "px"),
+        height: "".concat(this.maxSize.y, "px"),
+        transition: "grid-template-columns 1.2s ease-in-out, grid-template-rows 1.2s ease-in-out, transform 1.2s ease-in-out"
+      },
+      transform: {
+        size: this.maxSize,
+        anchor: new Vector2(0.5, 0.5)
       }
-    }));
+    }), true);
     this.grid.append(this.debug = new Debug(this, [1, 2, 1, 1]));
     glob.debug = this.debug;
-    this.grid.append(this.office = new Office([1, 1, 2, 2]));
+    this.grid.append(this.office = new Office([1, 1, 2, 2]), true);
     this.grid.append(this.coffee = new Coffee(this, [2, 1, 2, 2]));
     this.grid.append(this.computer = new Computer(this, [2, 1, 2, 1]));
     this.grid.append(this.keyboard = new Keyboard(this, [2, 1, 3, 1]));
     this.grid.append(this.statBar = new StatBar(this, [1, 1, 4, 1]));
+    window.addEventListener("resize", () => {
+      this.updateScale();
+    });
+    this.updateScale();
     this.addState(
       "atdesk",
       false,
@@ -2675,11 +2697,13 @@ var TileGame = class extends Screen {
   updateGridSize() {
     let w1 = 680;
     let w2 = 0;
+    this.maxSize = new Vector2(800, 620);
     if (this.state("atcoffeemachine")) {
       w2 = 400;
+      this.maxSize = new Vector2(1170, 620);
     } else if (this.state("atdesk")) {
-      w1 = 500;
       w2 = 450;
+      this.maxSize = new Vector2(1170, 620);
     }
     if (w2) {
       this.office.setStyle({
@@ -2702,6 +2726,13 @@ var TileGame = class extends Screen {
       width: this.state("atcoffeemachine") ? "400px" : "0%"
     });
     this.grid.setTemplateColumns("".concat(w1, "px ").concat(w2, "px"));
+    this.updateScale();
+  }
+  updateScale() {
+    const windowSize = new Vector2(window.innerWidth, window.innerHeight);
+    const xf = windowSize.x / this.maxSize.x;
+    const yf = windowSize.y / this.maxSize.y;
+    this.grid.transform.setScale(new Vector2(Math.min(xf, yf), Math.min(xf, yf)));
   }
   syncStates() {
     Object.values(this.stateData).forEach((data) => {

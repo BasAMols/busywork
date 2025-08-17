@@ -1,7 +1,6 @@
 import { HTML } from '../../../../../../element/element';
 import { Utils } from '../../../../../../math/util';
 import { Vector2 } from '../../../../../../math/vector2';
-import { glob } from '../../../../../base';
 import { TickerReturnData } from '../../../../../ticker';
 import { Person } from './assets';
 
@@ -95,7 +94,7 @@ export class Walker extends HTML {
 
     move(obj: TickerReturnData, direction: Vector2, speed: number) {
 
-        glob.debug.setText(`${direction.x.toFixed(2)} ${direction.y.toFixed(2)} ${speed.toFixed(2)} ${obj.frameRate.toFixed(2)} ${obj.interval.toFixed(2)} ${obj.intervalS20.toFixed(2)}`);
+        // glob.debug.setText(`${direction.x.toFixed(2)} ${direction.y.toFixed(2)} ${speed.toFixed(2)} ${obj.frameRate.toFixed(2)} ${obj.interval.toFixed(2)} ${obj.intervalS20.toFixed(2)}`);
         const normalisedSpeed = speed*obj.intervalS20*0.15;
         this.transform.setPosition(this.transform.position.add(direction.normalize().scale(normalisedSpeed)));
         this.walkCycle(normalisedSpeed);

@@ -20,7 +20,6 @@ export class Keyboard extends Section {
             width: '100%',
             height: '230px',
             justifyContent: 'flex-start',
-            transition: 'width 0.6s ease-in-out',
         }, gridParams);
 
         this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {

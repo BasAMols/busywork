@@ -18,7 +18,6 @@ export class StatBar extends Section {
     }[] = [];
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(700, 10), {
-            transition: 'width 0.8s ease-in-out, height 0.8s ease-in-out',
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',

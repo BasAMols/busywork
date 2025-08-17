@@ -238,7 +238,6 @@ export function getPerson(position: Vector2, rotation: number, arms: boolean = t
     }
     // legs
 
-
     const head = torso.append(new HTML({
         style: {
             width: '40px',

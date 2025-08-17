@@ -9,11 +9,13 @@ export class Section extends HTML {
                 width: size.x + 'px',
                 height: size.y + 'px',
 
-                boxShadow: '0px 0px 200px #0000004a',
+                // boxShadow: '0px 0px 200px #0000004a',
+                transition: 'width 1.2s ease-in-out, margin-left 1.2s ease-in-out',
+
                 overflow: 'hidden',
                 borderRadius: '10px',
                 gridColumn: gridParams[0] + ' / span ' + gridParams[1],
-                gridRow: gridParams[2] + ' / span ' + gridParams[3],   
+                gridRow: gridParams[2] + ' / span ' + gridParams[3],
                 ...style,
             },
             transform: {
