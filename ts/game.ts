@@ -9,11 +9,6 @@ export class Busywork extends Base {
         this.addScreen(new Menu(this));
         this.addScreen(new TileGame(this));
 
-        window.oncontextmenu = function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            return false;
-        };
     }
 
     public run() {

@@ -1,6 +1,7 @@
 import { HTML } from '../../../../../element/element';
 import { Flex } from '../../../../../element/flex';
 import { Ease } from '../../../../../math/easings';
+import { Utils } from '../../../../../math/util';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../ticker';
 import { TileGame } from '../../tilegame';
@@ -22,7 +23,16 @@ export class Computer extends Section {
             width: '100%',
             height: '350px',
             justifyContent: 'flex-start',
+            overflow: 'hidden',
         }, gridParams);
+
+        if (Utils.isMobile()) {
+            this.dom.style.width = '450px';
+            this.dom.style.height = '100%';
+        } else {
+            this.dom.style.width = '100%';
+            this.dom.style.height = '350px';
+        }
 
 
         this.screen = this.append(new HTML({

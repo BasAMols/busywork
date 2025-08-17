@@ -1,5 +1,6 @@
 import { HTML } from '../../../../../element/element';
 import { Tile } from '../../../../../element/tile';
+import { Utils } from '../../../../../math/util';
 import { Vector2 } from '../../../../../math/vector2';
 import { TileGame } from '../../tilegame';
 import { Section } from '../../util/section';
@@ -10,10 +11,18 @@ export class Coffee extends Section {
         super(new Vector2(400, 600), {
             backgroundColor: '#354c59',
             boxShadow: '0px 0px 200px #0000004a',
-            width: '400px',
-            height: '600px',
             justifyContent: 'flex-start',
         }, gridParams);
+
+
+        if (Utils.isMobile()) {
+            this.dom.style.width = '450px';
+            this.dom.style.height = '100%';
+        } else {
+            this.dom.style.width = '100%';
+            this.dom.style.height = '600px';
+        }
+
         
         this.append(new Tile({
             tileSize: new Vector2(80, 120),

@@ -1,5 +1,6 @@
 
 import { Ease } from '../../../../../math/easings';
+import { Utils } from '../../../../../math/util';
 import { Vector2 } from '../../../../../math/vector2';
 import { TickerReturnData } from '../../../../ticker';
 import { TileGame } from '../../tilegame';
@@ -18,9 +19,20 @@ export class Keyboard extends Section {
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
         super(new Vector2(450, 230), {
             width: '100%',
-            height: '230px',
+            height: '100%',
             justifyContent: 'flex-start',
+            overflow: 'hidden',
         }, gridParams);
+
+        if (Utils.isMobile()) {
+            this.dom.style.width = '450px';
+            this.dom.style.height = '100%';
+        } else {
+            this.dom.style.width = '100%';
+            this.dom.style.height = '230px';
+        }
+
+
 
         this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
             this.computer.addTT(key.toString());

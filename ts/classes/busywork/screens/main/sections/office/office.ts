@@ -87,6 +87,14 @@ export class Office extends Section {
             justifyContent: 'center',
         }, gridParams);
 
+        if (Utils.isMobile()) {
+            this.dom.style.width = '100%';
+            this.dom.style.height = '100%';
+        } else {
+            this.dom.style.width = '100%';
+            this.dom.style.height = '600px';
+        }
+
         const wrap = this.append(new HTML({
             style: {
                 width: '700px',

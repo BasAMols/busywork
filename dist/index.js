@@ -646,6 +646,23 @@ var Ease = {
   }
 };
 
+// ts/classes/math/util.ts
+var Utils = class {
+  static clamp(value, min, max) {
+    if (typeof value === "number" && typeof min === "number" && typeof max === "number") {
+      return Math.max(min, Math.min(value, max));
+    } else if (value instanceof Vector2 && min instanceof Vector2 && max instanceof Vector2) {
+      return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
+    }
+  }
+  static lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+  static isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+};
+
 // ts/classes/busywork/screens/main/util/section.ts
 var Section = class extends HTML {
   constructor(size, style, gridParams = [1, 1, 1, 1]) {
@@ -675,13 +692,21 @@ var Computer = class extends Section {
       boxShadow: "0px 0px 200px #0000004a",
       width: "100%",
       height: "350px",
-      justifyContent: "flex-start"
+      justifyContent: "flex-start",
+      overflow: "hidden"
     }, gridParams);
     this.parent = parent;
     this._text = "";
     this._code = void 0;
     this._completed = 0;
     this.target = 3;
+    if (Utils.isMobile()) {
+      this.dom.style.width = "450px";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "350px";
+    }
     this.screen = this.append(new HTML({
       style: {
         width: "440px",
@@ -942,10 +967,18 @@ var Keyboard = class extends Section {
   constructor(parent, gridParams) {
     super(new Vector2(450, 230), {
       width: "100%",
-      height: "230px",
-      justifyContent: "flex-start"
+      height: "100%",
+      justifyContent: "flex-start",
+      overflow: "hidden"
     }, gridParams);
     this.parent = parent;
+    if (Utils.isMobile()) {
+      this.dom.style.width = "450px";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "230px";
+    }
     this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
       this.computer.addTT(key.toString());
       if (key === 0 || key === 3) {
@@ -1015,23 +1048,6 @@ var Tile = class extends HTML {
         })));
       }
     }
-  }
-};
-
-// ts/classes/math/util.ts
-var Utils = class {
-  static clamp(value, min, max) {
-    if (typeof value === "number" && typeof min === "number" && typeof max === "number") {
-      return Math.max(min, Math.min(value, max));
-    } else if (value instanceof Vector2 && min instanceof Vector2 && max instanceof Vector2) {
-      return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
-    }
-  }
-  static lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-  static isMobile() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
 };
 
@@ -1875,6 +1891,13 @@ var Office = class extends Section {
       }
     ];
     this._tired = 0;
+    if (Utils.isMobile()) {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "600px";
+    }
     const wrap = this.append(new HTML({
       style: {
         width: "700px",
@@ -2027,7 +2050,7 @@ var Icon = class extends HTML {
 // ts/classes/busywork/screens/main/sections/stat/statbar.ts
 var StatBar = class _StatBar extends Section {
   constructor(parent, gridParams) {
-    super(new Vector2(700, 10), {
+    super(new Vector2(700, 1), {
       display: "flex",
       flexDirection: "row",
       alignItems: "center",
@@ -2041,7 +2064,7 @@ var StatBar = class _StatBar extends Section {
       pointerEvents: "none",
       width: "100%",
       height: "100%",
-      top: "-50px"
+      bottom: "20px"
     }, gridParams);
     this.parent = parent;
     this.stats = [];
@@ -2490,11 +2513,16 @@ var Coffee = class extends Section {
     super(new Vector2(400, 600), {
       backgroundColor: "#354c59",
       boxShadow: "0px 0px 200px #0000004a",
-      width: "400px",
-      height: "600px",
       justifyContent: "flex-start"
     }, gridParams);
     this.parent = parent;
+    if (Utils.isMobile()) {
+      this.dom.style.width = "450px";
+      this.dom.style.height = "100%";
+    } else {
+      this.dom.style.width = "100%";
+      this.dom.style.height = "600px";
+    }
     this.append(new Tile({
       tileSize: new Vector2(80, 120),
       transform: {
@@ -2697,13 +2725,23 @@ var TileGame = class extends Screen {
         anchor: new Vector2(0.5, 0.5)
       }
     }), true);
-    this.grid.append(this.coffee = new Coffee(this, [5, 1, 3, 3]));
-    this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-    this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-    this.grid.append(this.debug = new Debug(this, [1, 5, 1, 1]));
-    this.grid.append(this.office = new Office([3, 1, 3, 3]), true);
-    this.grid.append(this.statBar = new StatBar(this, [3, 1, 7, 1]));
-    this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 50], 20);
+    if (Utils.isMobile()) {
+      this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
+      this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+      this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+      this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
+      this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
+      this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
+      this.gridManager = new GridManager(this.grid, [700], [0, 350, 230, 600, 1, 600], 20);
+    } else {
+      this.grid.append(this.coffee = new Coffee(this, [5, 1, 3, 3]));
+      this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+      this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+      this.grid.append(this.debug = new Debug(this, [1, 5, 1, 1]));
+      this.grid.append(this.office = new Office([3, 1, 3, 3]), true);
+      this.grid.append(this.statBar = new StatBar(this, [3, 1, 7, 1]));
+      this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
+    }
     glob.debug = this.debug;
     window.addEventListener("resize", () => {
       this.updateScale();
@@ -2731,9 +2769,6 @@ var TileGame = class extends Screen {
       () => {
         this.updateGridSize();
         return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
-      },
-      (value) => {
-        this.coffee.dom.style.width = value ? "400px" : "0px";
       }
     );
     this.addState(
@@ -2765,11 +2800,20 @@ var TileGame = class extends Screen {
     return (_a = this.stateData[state]) == null ? void 0 : _a.value;
   }
   updateGridSize() {
-    this.gridManager.setColumn(0, this.state("atdesk") ? 450 : 0);
-    this.gridManager.setColumn(1, 680);
-    this.gridManager.setColumn(2, this.state("atcoffeemachine") ? 400 : 0);
-    this.gridManager.updateGrid();
-    this.updateScale(this.gridManager.getSize().add(new Vector2(20, 20)));
+    if (Utils.isMobile()) {
+      this.gridManager.setColumn(0, this.state("atdesk") || this.state("atcoffeemachine") ? 450 : 700);
+      this.gridManager.setRow(1, this.state("atdesk") ? 350 : 0);
+      this.gridManager.setRow(2, this.state("atdesk") ? 230 : 0);
+      this.gridManager.setRow(3, this.state("atdesk") || this.state("atcoffeemachine") ? 500 : 600);
+      this.gridManager.setRow(5, this.state("atcoffeemachine") ? 600 : 0);
+      this.gridManager.updateGrid();
+    } else {
+      this.gridManager.setColumn(0, this.state("atdesk") ? 450 : 0);
+      this.gridManager.setColumn(1, 680);
+      this.gridManager.setColumn(2, this.state("atcoffeemachine") ? 400 : 0);
+      this.gridManager.updateGrid();
+    }
+    this.updateScale(this.gridManager.getSize().add(new Vector2(40, 40)));
   }
   updateScale(size = this.maxSize) {
     const windowSize = new Vector2(window.innerWidth, window.innerHeight);
@@ -2848,11 +2892,6 @@ var Busywork = class extends Game2 {
     super();
     this.addScreen(new Menu(this));
     this.addScreen(new TileGame(this));
-    window.oncontextmenu = function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      return false;
-    };
   }
   run() {
     this.screens["menu"].visible = false;

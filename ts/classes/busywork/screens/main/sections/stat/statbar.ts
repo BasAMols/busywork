@@ -17,7 +17,7 @@ export class StatBar extends Section {
         setter: (element: HTML, value: number) => void;
     }[] = [];
     public constructor(private parent: TileGame, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(700, 10), {
+        super(new Vector2(700, 1), {
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
@@ -31,7 +31,7 @@ export class StatBar extends Section {
             pointerEvents: 'none',
             width: '100%',
             height: '100%',
-            top: '-50px',
+            bottom: '20px',
         }, gridParams);
 
         this.addStat(StatBar.getStatBlock('person_apron', 50), 0, () => {

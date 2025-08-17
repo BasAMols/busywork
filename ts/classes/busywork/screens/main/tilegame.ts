@@ -10,6 +10,7 @@ import { Coffee } from './sections/coffee/coffee';
 import { Debug } from './sections/debug';
 import { Grid } from '../../../element/grid';
 import { glob } from '../../base';
+import { Utils } from '../../../math/util';
 
 export class GridManager {
 
@@ -126,12 +127,22 @@ export class TileGame extends Screen {
 
     updateGridSize() {
 
-        this.gridManager.setColumn(0, this.state('atdesk') ? 450 : 0);
-        this.gridManager.setColumn(1, 680);
-        this.gridManager.setColumn(2, this.state('atcoffeemachine') ? 400 : 0);
-        this.gridManager.updateGrid();
+        if (Utils.isMobile()) {
+            this.gridManager.setColumn(0, this.state('atdesk') || this.state('atcoffeemachine') ? 450 : 700);
+            this.gridManager.setRow(1, this.state('atdesk') ? 350 : 0);
+            this.gridManager.setRow(2, this.state('atdesk') ? 230 : 0);
+            this.gridManager.setRow(3, this.state('atdesk') || this.state('atcoffeemachine') ? 500 : 600);
+            this.gridManager.setRow(5, this.state('atcoffeemachine') ? 600 : 0);
+            this.gridManager.updateGrid();
+        } else {
+            this.gridManager.setColumn(0, this.state('atdesk') ? 450 : 0);
+            this.gridManager.setColumn(1, 680);
+            this.gridManager.setColumn(2, this.state('atcoffeemachine') ? 400 : 0);
+            this.gridManager.updateGrid();
+        }
 
-        this.updateScale(this.gridManager.getSize().add(new Vector2(20, 20)));
+
+        this.updateScale(this.gridManager.getSize().add(new Vector2(40, 40)));
     }
 
     updateScale(size: Vector2 = this.maxSize) {
@@ -158,13 +169,26 @@ export class TileGame extends Screen {
                 anchor: new Vector2(0.5, 0.5),
             }
         }), true);
-        this.grid.append(this.coffee = new Coffee(this, [5, 1, 3, 3]));
-        this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-        this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-        this.grid.append(this.debug = new Debug(this, [1, 5, 1, 1]));
-        this.grid.append(this.office = new Office([3, 1, 3, 3]), true);
-        this.grid.append(this.statBar = new StatBar(this, [3, 1, 7, 1]));
-        this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 50], 20);
+
+        if (Utils.isMobile()) {
+            this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
+            this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+            this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+            this.grid.append(this.office = new Office([1, 1, 7, 1]), true);
+            this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
+            this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
+            this.gridManager = new GridManager(this.grid, [700], [0, 350, 230, 600, 1, 600], 20);
+        } else {
+            this.grid.append(this.coffee = new Coffee(this, [5, 1, 3, 3]));
+            this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+            this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+            this.grid.append(this.debug = new Debug(this, [1, 5, 1, 1]));
+            this.grid.append(this.office = new Office([3, 1, 3, 3]), true);
+            this.grid.append(this.statBar = new StatBar(this, [3, 1, 7, 1]));
+            this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
+        }
+
+
         glob.debug = this.debug;
 
         window.addEventListener('resize', () => {
@@ -180,7 +204,6 @@ export class TileGame extends Screen {
                     (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 60);
             },
             (value) => {
-                // this.computerCol.dom.style.width = value ? '450px' : '0px';
                 this.updateGridSize();
                 this.office.sitter.seated = value;
                 this.office.walker.visible = !value;
@@ -195,9 +218,6 @@ export class TileGame extends Screen {
                 this.updateGridSize();
                 return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 &&
                     (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
-            },
-            (value) => {
-                this.coffee.dom.style.width = value ? '400px' : '0px';
             }
         );
         this.addState('bossinroom', false,
