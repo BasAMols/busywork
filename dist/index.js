@@ -2871,76 +2871,15 @@ var BusyWork3 = class extends Flex {
       },
       classList: ["screen"]
     });
+    this._mobile = false;
     this.maxSize = new Vector2(1170, 620);
     this.stateData = {};
-    this._mobile = false;
-    this.init();
-    this.append(this.grid = new Grid({
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 0,
-      style: {
-        width: "".concat(this.maxSize.x, "px"),
-        height: "".concat(this.maxSize.y, "px"),
-        transition: "grid-template-columns 1s cubic-bezier(0.4, 0, 0.2, 1), grid-template-rows 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1)"
-      },
-      transform: {
-        size: this.maxSize,
-        anchor: new Vector2(0.5, 0.5)
-      }
-    }), true);
-    this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
-    this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-    this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-    this.grid.append(this.office = new Office(this, [1, 1, 7, 1]), true);
-    this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
-    this.grid.append(this.gameover = new Gameover(this, [1, 1, 1, 1]));
-    this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
-    this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
-    glob.debug = this.debug;
-    window.addEventListener("resize", () => {
-      glob.mobile = window.innerWidth < window.innerHeight;
-      this.updateGridSize(true);
-    });
-    this.updateGridSize(true);
-    this.addState(
-      "atdesk",
-      false,
-      () => {
-        return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 60 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 60);
-      },
-      (value) => {
-        this.updateGridSize();
-        this.office.sitter.seated = value;
-        this.office.walker.visible = !value;
-        if (value) {
-          this.office.walker.setDestination(void 0);
-          this.office.walker.transform.setPosition(new Vector2(280, 160));
-        }
-      }
-    );
-    this.addState(
-      "atcoffeemachine",
-      false,
-      () => {
-        this.updateGridSize();
-        return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
-      }
-    );
-    this.addState(
-      "bossinroom",
-      false,
-      () => {
-        return this.office.npc.phase > 0 && this.office.npc.phase < 5;
-      }
-    );
-    this.addState(
-      "bosslooking",
-      false,
-      () => {
-        return this.office.npc.phase > 2 && this.office.npc.phase < 4;
-      }
-    );
+    glob.game = this;
+    this.setupDocument();
+    this.setupParams();
+    this.setupGrid();
+    this.setupTicker();
+    this.setupStates();
   }
   addState(state, initial, condition, onChange) {
     var _a, _b;
@@ -3002,29 +2941,104 @@ var BusyWork3 = class extends Flex {
     const yf = windowSize.y / size.y;
     this.grid.transform.setScale(new Vector2(Math.min(xf, yf), Math.min(xf, yf)));
   }
-  init() {
+  setupDocument() {
     if (location.hostname !== "localhost") {
       const base = document.createElement("base");
       base.href = "https://basamols.github.io/busywork/dist/";
       document.head.appendChild(base);
     }
-    const url = new URLSearchParams(location.search);
-    this.params = {
-      debug: url.get("debug") === "true" ? true : false,
-      boss: url.get("boss") === "true" ? true : false
-    };
     document.body.appendChild(this.dom);
     window.oncontextmenu = function(event) {
       event.preventDefault();
       event.stopPropagation();
       return false;
     };
+    window.addEventListener("resize", () => {
+      glob.mobile = window.innerWidth < window.innerHeight;
+      this.updateGridSize(true);
+    });
+  }
+  setupParams() {
+    const url = new URLSearchParams(location.search);
+    this.params = {
+      debug: false,
+      boss: true,
+      initialTired: 0
+    };
+    url.forEach((value, key) => {
+      if (key in this.params) {
+        const key2 = key;
+        if (typeof this.params[key2] === "boolean") {
+          this.params[key2] = Boolean(value);
+        }
+        if (typeof this.params[key2] === "number") {
+          this.params[key2] = Number(value);
+        }
+      }
+    });
+  }
+  setupGrid() {
+    this.append(this.grid = new Grid({
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 0,
+      style: {
+        width: "".concat(this.maxSize.x, "px"),
+        height: "".concat(this.maxSize.y, "px"),
+        transition: "grid-template-columns 1s cubic-bezier(0.4, 0, 0.2, 1), grid-template-rows 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1)"
+      },
+      transform: {
+        size: this.maxSize,
+        anchor: new Vector2(0.5, 0.5)
+      }
+    }), true);
+    this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
+    this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
+    this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
+    this.grid.append(this.office = new Office(this, [1, 1, 7, 1]), true);
+    this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
+    this.grid.append(this.gameover = new Gameover(this, [1, 1, 1, 1]));
+    this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
+    this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
+    glob.debug = this.debug;
+    this.updateGridSize(true);
+  }
+  setupTicker() {
     this.ticker = new Ticker(this);
     this.ticker.add(this.tick.bind(this));
     this.ticker.start();
     glob.timer = this.ticker.timer;
   }
-  syncStates() {
+  setupStates() {
+    this.addState(
+      "atdesk",
+      false,
+      () => {
+        return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 60 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 60);
+      },
+      (value) => {
+        this.updateGridSize();
+        this.office.sitter.seated = value;
+        this.office.walker.visible = !value;
+        if (value) {
+          this.office.walker.setDestination(void 0);
+          this.office.walker.transform.setPosition(new Vector2(280, 160));
+        }
+      }
+    );
+    this.addState("atcoffeemachine", false, () => {
+      this.updateGridSize();
+      return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
+    });
+    this.addState("bossinroom", false, () => {
+      return this.office.npc.phase > 0 && this.office.npc.phase < 5;
+    });
+    this.addState("bosslooking", false, () => {
+      return this.office.npc.phase > 2 && this.office.npc.phase < 4;
+    });
+  }
+  tick(obj) {
+    super.tick(obj);
     Object.values(this.stateData).forEach((data) => {
       const lastValue = data.value;
       if (data.condition) {
@@ -3034,10 +3048,6 @@ var BusyWork3 = class extends Flex {
         data.onChange(data.value);
       }
     });
-  }
-  tick(obj) {
-    super.tick(obj);
-    this.syncStates();
     this.gameover.tick(obj);
   }
 };

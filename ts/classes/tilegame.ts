@@ -13,6 +13,11 @@ import { Office } from './sections/office/office';
 import { StatBar } from './sections/stat/statbar';
 import { TickerReturnData, Ticker } from './ticker';
 
+export interface BusyworkParams {
+    debug: boolean;
+    boss: boolean;
+    initialTired: number;
+}
 
 export var glob = new class {
     public game: BusyWork;
@@ -21,37 +26,31 @@ export var glob = new class {
     public timer: Timer;
     public debug: Debug;
     public mobile: boolean = false;
+    public params: BusyworkParams;
 };
-
-export interface BusyworkParams {
-    debug: boolean;
-    boss: boolean;
-}
-
 
 export class BusyWork extends Flex {
     public ticker: Ticker;
     public params: BusyworkParams;
-
     public office: Office;
     public computer: Computer;
     public keyboard: Keyboard;
     public coffee: Coffee;
     public debug: Debug;
     public gameover: Gameover;
+    private _mobile: boolean = false;
     public maxSize: Vector2 = new Vector2(1170, 620);
+    public statBar: StatBar;
+    public grid: Grid;
+    public gridManager: GridManager;
+
     private stateData: {
         [key: string]: {
             value: boolean;
             condition?: () => boolean;
             onChange?: (value: boolean) => void;
         };
-    } = {
-
-        };
-    statBar: StatBar;
-    grid: Grid;
-    gridManager: GridManager;
+    } = {};
 
     public addState(state: string, initial: boolean, condition?: () => boolean, onChange?: (value: boolean) => void) {
         this.stateData[state] = {
@@ -66,9 +65,7 @@ export class BusyWork extends Flex {
         return this.stateData[state]?.value;
     }
 
-    private _mobile: boolean = false;
-
-    updateGridSize(force: boolean = false) {
+    public updateGridSize(force: boolean = false) {
 
         if (this._mobile !== Utils.isMobile() || force) {
             this._mobile = Utils.isMobile();
@@ -120,26 +117,22 @@ export class BusyWork extends Flex {
 
     }
 
-    updateScale(size: Vector2 = this.maxSize) {
+    private updateScale(size: Vector2 = this.maxSize) {
         const windowSize = new Vector2(window.innerWidth, window.innerHeight);
         const xf = windowSize.x / size.x;
         const yf = windowSize.y / size.y;
         this.grid.transform.setScale(new Vector2(Math.min(xf, yf), Math.min(xf, yf)));
     }
 
-    init() {
+
+
+    private setupDocument() {
 
         if (location.hostname !== 'localhost') {
             const base = document.createElement('base');
             base.href = "https://basamols.github.io/busywork/dist/";
             document.head.appendChild(base);
         }
-
-        const url = new URLSearchParams(location.search);
-        this.params = {
-            debug: url.get('debug') === 'true' ? true : false,
-            boss: url.get('boss') === 'true' ? true : false,
-        };
 
         document.body.appendChild(this.dom);
 
@@ -149,28 +142,37 @@ export class BusyWork extends Flex {
             return false;
         };
 
-
-        this.ticker = new Ticker(this);
-        this.ticker.add(this.tick.bind(this));
-        this.ticker.start();
-        glob.timer = this.ticker.timer;
-    }
-
-    public constructor() {
-        super({
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexDirection: 'column',
-            style: {
-                width: '100%',
-                height: '100%', backgroundColor: '#2a3e48',
-                transition: 'transform 0.6s ease-in-out',
-            }, classList: ['screen'],
+        window.addEventListener('resize', () => {
+            glob.mobile = window.innerWidth < window.innerHeight;
+            this.updateGridSize(true);
         });
 
-        this.init();
+    }
 
+        
+    private setupParams() {
+        const url = new URLSearchParams(location.search);
+        this.params = {
+            debug: false,
+            boss: true,
+            initialTired: 0,
+        };
 
+        url.forEach((value: string, key: string) => {
+            if (key in this.params) {
+                const key2 = key as keyof BusyworkParams;
+                if (typeof this.params[key2] === 'boolean') {
+                    (this.params as any)[key2] = Boolean(value);
+                }
+                if (typeof this.params[key2] === 'number') {
+                    (this.params as any)[key2] = Number(value);
+                }
+            }
+        });
+    }
+
+    public setupGrid() {
+        
         this.append(this.grid = new Grid({
             justifyContent: 'center',
             alignItems: 'center',
@@ -194,18 +196,20 @@ export class BusyWork extends Flex {
         this.grid.append(this.gameover = new Gameover(this, [1, 1, 1, 1]));
         this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
         this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
-
-
-
         glob.debug = this.debug;
-
-        window.addEventListener('resize', () => {
-            glob.mobile = window.innerWidth < window.innerHeight;
-            this.updateGridSize(true);
-        });
 
         this.updateGridSize(true);
 
+    }
+
+    private setupTicker() {
+        this.ticker = new Ticker(this);
+        this.ticker.add(this.tick.bind(this));
+        this.ticker.start();
+        glob.timer = this.ticker.timer;
+    }
+
+    private setupStates() {
         this.addState('atdesk', false,
             () => {
                 return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 60 &&
@@ -221,27 +225,44 @@ export class BusyWork extends Flex {
                 }
             }
         );
-        this.addState('atcoffeemachine', false,
-            () => {
-                this.updateGridSize();
-                return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 &&
-                    (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
-            }
-        );
-        this.addState('bossinroom', false,
-            () => {
-                return this.office.npc.phase > 0 && this.office.npc.phase < 5;
-            }
-        );
-        this.addState('bosslooking', false,
-            () => {
-                return this.office.npc.phase > 2 && this.office.npc.phase < 4;
-            }
-        );
+        this.addState('atcoffeemachine', false, () => {
+            this.updateGridSize();
+            return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 &&
+                (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
+        });
+        this.addState('bossinroom', false, () => {
+            return this.office.npc.phase > 0 && this.office.npc.phase < 5;
+        });
+        this.addState('bosslooking', false, () => {
+            return this.office.npc.phase > 2 && this.office.npc.phase < 4;
+        });
     }
 
 
-    public syncStates() {
+    public constructor() {
+        super({
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'column',
+            style: {
+                width: '100%',
+                height: '100%', backgroundColor: '#2a3e48',
+                transition: 'transform 0.6s ease-in-out',
+            }, classList: ['screen'],
+        });
+
+        glob.game = this;
+
+        this.setupDocument();
+        this.setupParams();
+        this.setupGrid();
+        this.setupTicker();
+        this.setupStates();
+
+    }
+
+    public tick(obj: TickerReturnData) {
+        super.tick(obj);
         Object.values(this.stateData).forEach(data => {
             const lastValue = data.value;
             if (data.condition) {
@@ -251,14 +272,8 @@ export class BusyWork extends Flex {
                 data.onChange(data.value);
             }
         });
-    }
-
-    public tick(obj: TickerReturnData) {
-        super.tick(obj);
-        this.syncStates();
 
         this.gameover.tick(obj);
-
     }
 
 }
