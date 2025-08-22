@@ -1,4 +1,4 @@
-import { glob } from '../busywork/base';
+import { glob } from '../tilegame';
 import { Vector2 } from './vector2';
 
 export class Utils {
