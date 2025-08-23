@@ -127,8 +127,9 @@ export class BusyWork extends HTML {
         this.append(this.coffee = new Coffee(this));
         this.append(this.gameover = new Gameover(this));
         this.append(this.statBar = new StatBar(this));
+        this.append(this.debug = new Debug(this));
         glob.debug = this.debug;
-        this.gridManager = new GridManager(this, [this.computer, this.keyboard, this.office, this.coffee, this.gameover, this.statBar]);
+        this.gridManager = new GridManager(this, [this.computer, this.keyboard, this.office, this.coffee, this.gameover, this.statBar, this.debug]);
 
         this.ticker.start();
 

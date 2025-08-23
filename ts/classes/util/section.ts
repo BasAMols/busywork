@@ -9,18 +9,20 @@ export class Section extends HTML {
     animations: Animator[];
 
     public gridData: {
-        size: Vector2;
         position: Vector2;
+        size: Vector2;
+        scale: Vector2;
         index: number;
-        sizer?: () => { size: Vector2, position: Vector2, index: number; };
+        sizer?: () => { size?: Vector2, position?: Vector2, index?: number; };
     } = {
-            size: new Vector2(0, 0),
-            position: new Vector2(0, 0),
-            index: 0,
-        };
+        position: new Vector2(0, 0),
+        size: new Vector2(0, 0),
+        scale: new Vector2(1, 1),
+        index: 0,
+    };
     name: string;
 
-    public constructor(style: Partial<CSSStyleDeclaration>, gridData: Section['gridData'], name: string) {
+    public constructor(style: Partial<CSSStyleDeclaration>, gridData: Partial<Section['gridData']>, name: string) {
         super({
             style: {
                 overflow: 'hidden',
@@ -28,13 +30,19 @@ export class Section extends HTML {
                 ...style,
             },
             transform: {
-                anchor: new Vector2(0.5, 0.5),
+                anchor: new Vector2(0, 0),
             }
         });
 
         this.absolute = true;
 
-        this.gridData = gridData;
+        this.gridData = {
+            position: new Vector2(0, 0),
+            size: new Vector2(0, 0),
+            scale: new Vector2(1, 1),
+            index: 0,
+            ...gridData,
+        };
         this.name = name;
         this.dom.classList.add(`section-${name}`);
 
@@ -62,7 +70,20 @@ export class Section extends HTML {
             onChange: (value: number) => {
                 this.transform.setPosition(new Vector2(this.transform.position.x, value));
             }
+        }, {
+            scale: 10,
+            duration: 350,
+            onChange: (value: number) => {
+                this.transform.setScale(new Vector2(value, this.transform.scale.y));
+            }
+        }, {
+            scale: 10,
+            duration: 350,
+            onChange: (value: number) => {
+                this.transform.setScale(new Vector2(this.transform.scale.x, value));
+            }
         }]);
+
 
     }
 
@@ -73,6 +94,8 @@ export class Section extends HTML {
         this.animations[1].target = this.gridData.size.y;
         this.animations[2].target = this.gridData.position.x;
         this.animations[3].target = this.gridData.position.y;
+        this.animations[4].target = this.gridData.scale.x;
+        this.animations[5].target = this.gridData.scale.y;
 
         this.dom.style.zIndex = this.gridData.index.toString();
     }

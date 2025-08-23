@@ -36,16 +36,9 @@ export class StatBar extends Section {
             index: 1,
             sizer: () => {
                 return {
-                    size: new Vector2(700, 20),
-                    position: new Vector2(0, 0),
-                    index: 1,
-                    sizer: () => {
-                        return {
-                            size: new Vector2(700, 20),
-                            position: parent.getState('atdesk') ? new Vector2(470, 560) : new Vector2(0, 560),
-                            index: 5,
-                        }
-                    }
+                    size: new Vector2(700, 40),
+                    position: new Vector2(0, 570),
+                    index: 6,
                 }
             }
         }, 'statbar');

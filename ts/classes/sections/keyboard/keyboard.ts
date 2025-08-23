@@ -21,14 +21,15 @@ export class Keyboard extends Section {
             justifyContent: 'flex-start',
             overflow: 'hidden',
         }, {
-            size: new Vector2(0, 230),
+            size: new Vector2(450, 230),
             position: new Vector2(0, 370),
-            index: 0,
+            scale: new Vector2(0.5, 0.5),
+            index: 2,
             sizer: () => {
                 return {
-                    size: new Vector2(parent.getState('atdesk') ? 450 : 0, 230),
-                    position: new Vector2(0, 370),
-                    index: 0,
+                    size: new Vector2(450, parent.getState('atdesk') ? 240 : 0),
+                    position: new Vector2(370, parent.getState('atdesk')?-140:-0),
+                    index: 2,
                 }
             }
         }, 'keyboard');
@@ -46,6 +47,8 @@ export class Keyboard extends Section {
         }, () => {
             this.sitter.person.armTwist = [0.5, -0.5];
         }));
+
+        this.children[0].dom.style.bottom = '0px';
     }
 
     tick(obj: TickerReturnData) {

@@ -23,14 +23,15 @@ export class Computer extends Section {
             justifyContent: 'flex-start',
             overflow: 'hidden',
         }, {
-            size: new Vector2(0, 350),
+            size: new Vector2(450, 0),
             position: new Vector2(0, 0),
+            scale: new Vector2(0.75, 0.75),
             index: 0,
             sizer: () => {
                 return {
-                    size: new Vector2(parent.getState('atdesk') ? 450 : 0, 350),
-                    position: new Vector2(0, 0),
-                    index: 0,
+                    size: new Vector2(450, parent.getState('atdesk') ? 350 : 0),
+                    position: new Vector2(50, parent.getState('atdesk')?-230:0),
+                    index: 2,
                 }
             }
         }, 'computer');
@@ -45,10 +46,10 @@ export class Computer extends Section {
                 borderRadius: '30px',
                 overflow: 'hidden',
                 cursor: 'none',
+                bottom: '10px',
+                left: '5px',
             },
-            transform: {
-                position: new Vector2(5, 10),
-            },
+
             onMouseEnter: () => {
                 this.cursor.visible = true;
             },

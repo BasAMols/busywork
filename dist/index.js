@@ -450,10 +450,12 @@ var GridManager = class {
       if (section.gridData.size.x === 0 || section.gridData.size.y === 0) {
         return;
       }
+      let width = section.gridData.size.x * section.gridData.scale.x;
+      let height = section.gridData.size.y * section.gridData.scale.y;
       left = left === void 0 ? section.gridData.position.x : Math.min(left, section.gridData.position.x);
-      right = right === void 0 ? section.gridData.position.x + section.gridData.size.x : Math.max(right, section.gridData.position.x + section.gridData.size.x);
+      right = right === void 0 ? section.gridData.position.x + width : Math.max(right, section.gridData.position.x + width);
       top = top === void 0 ? section.gridData.position.y : Math.min(top, section.gridData.position.y);
-      bottom = bottom === void 0 ? section.gridData.position.y + section.gridData.size.y : Math.max(bottom, section.gridData.position.y + section.gridData.size.y);
+      bottom = bottom === void 0 ? section.gridData.position.y + height : Math.max(bottom, section.gridData.position.y + height);
     });
     const size = new Vector2(right - left, bottom - top);
     const windowSize = new Vector2(window.innerWidth, window.innerHeight);
@@ -461,8 +463,8 @@ var GridManager = class {
     const position = windowSize.sub(size.scale(scale)).div(2);
     this.animations[0][force ? "force" : "target"] = size.x;
     this.animations[1][force ? "force" : "target"] = size.y;
-    this.animations[2][force ? "force" : "target"] = position.x;
-    this.animations[3][force ? "force" : "target"] = position.y;
+    this.animations[2][force ? "force" : "target"] = position.x + (left < 0 ? -left * scale : 0);
+    this.animations[3][force ? "force" : "target"] = position.y + (top < 0 ? -top * scale : 0);
     this.animations[4][force ? "force" : "target"] = scale;
   }
 };
@@ -515,16 +517,22 @@ var Section = class extends HTML {
         borderRadius: "10px"
       }, style),
       transform: {
-        anchor: new Vector2(0.5, 0.5)
+        anchor: new Vector2(0, 0)
       }
     });
     this.gridData = {
-      size: new Vector2(0, 0),
       position: new Vector2(0, 0),
+      size: new Vector2(0, 0),
+      scale: new Vector2(1, 1),
       index: 0
     };
     this.absolute = true;
-    this.gridData = gridData;
+    this.gridData = __spreadValues({
+      position: new Vector2(0, 0),
+      size: new Vector2(0, 0),
+      scale: new Vector2(1, 1),
+      index: 0
+    }, gridData);
     this.name = name;
     this.dom.classList.add("section-".concat(name));
     this.animations = glob.bulkAnimations([{
@@ -551,6 +559,18 @@ var Section = class extends HTML {
       onChange: (value) => {
         this.transform.setPosition(new Vector2(this.transform.position.x, value));
       }
+    }, {
+      scale: 10,
+      duration: 350,
+      onChange: (value) => {
+        this.transform.setScale(new Vector2(value, this.transform.scale.y));
+      }
+    }, {
+      scale: 10,
+      duration: 350,
+      onChange: (value) => {
+        this.transform.setScale(new Vector2(this.transform.scale.x, value));
+      }
     }]);
   }
   updateGrid() {
@@ -560,6 +580,8 @@ var Section = class extends HTML {
     this.animations[1].target = this.gridData.size.y;
     this.animations[2].target = this.gridData.position.x;
     this.animations[3].target = this.gridData.position.y;
+    this.animations[4].target = this.gridData.scale.x;
+    this.animations[5].target = this.gridData.scale.y;
     this.dom.style.zIndex = this.gridData.index.toString();
   }
 };
@@ -986,15 +1008,18 @@ var Coffee = class extends Section {
     super({
       backgroundColor: "#354c59",
       justifyContent: "flex-start",
-      overflow: "hidden"
+      overflow: "hidden",
+      boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.5)"
     }, {
       size: new Vector2(0, 600),
       position: new Vector2(720, 0),
+      scale: new Vector2(1, 1),
       index: 0,
       sizer: () => {
         return {
           size: new Vector2(parent.getState("atcoffeemachine") ? 400 : 0, 600),
-          position: new Vector2(720, 0),
+          position: new Vector2(680, 200),
+          scale: new Vector2(0.75, 0.75),
           index: 0
         };
       }
@@ -1140,14 +1165,15 @@ var Computer = class extends Section {
       justifyContent: "flex-start",
       overflow: "hidden"
     }, {
-      size: new Vector2(0, 350),
+      size: new Vector2(450, 0),
       position: new Vector2(0, 0),
+      scale: new Vector2(0.75, 0.75),
       index: 0,
       sizer: () => {
         return {
-          size: new Vector2(parent.getState("atdesk") ? 450 : 0, 350),
-          position: new Vector2(0, 0),
-          index: 0
+          size: new Vector2(450, parent.getState("atdesk") ? 350 : 0),
+          position: new Vector2(50, parent.getState("atdesk") ? -230 : 0),
+          index: 2
         };
       }
     }, "computer");
@@ -1164,10 +1190,9 @@ var Computer = class extends Section {
         boxShadow: "inset rgb(0 0 0) 6px 3px 200px 3px",
         borderRadius: "30px",
         overflow: "hidden",
-        cursor: "none"
-      },
-      transform: {
-        position: new Vector2(5, 10)
+        cursor: "none",
+        bottom: "10px",
+        left: "5px"
       },
       onMouseEnter: () => {
         this.cursor.visible = true;
@@ -1336,6 +1361,34 @@ var Computer = class extends Section {
         filter: "blur(0px)"
       });
     }
+  }
+};
+
+// ts/classes/sections/debug.ts
+var Debug = class extends Section {
+  constructor(parent) {
+    super({
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "10px",
+      boxSizing: "border-box",
+      backgroundColor: "transparent",
+      boxShadow: "none",
+      overflow: "visible",
+      pointerEvents: "none",
+      background: "#3c5561",
+      color: "#fff",
+      fontFamily: "monospace",
+      fontSize: "24px",
+      padding: "0 10px"
+    }, {
+      size: new Vector2(0, 0),
+      position: new Vector2(-50, -50),
+      index: 0
+    }, "debug");
+    this.parent = parent;
   }
 };
 
@@ -1515,14 +1568,15 @@ var Keyboard = class extends Section {
       justifyContent: "flex-start",
       overflow: "hidden"
     }, {
-      size: new Vector2(0, 230),
+      size: new Vector2(450, 230),
       position: new Vector2(0, 370),
-      index: 0,
+      scale: new Vector2(0.5, 0.5),
+      index: 2,
       sizer: () => {
         return {
-          size: new Vector2(parent.getState("atdesk") ? 450 : 0, 230),
-          position: new Vector2(0, 370),
-          index: 0
+          size: new Vector2(450, parent.getState("atdesk") ? 240 : 0),
+          position: new Vector2(370, parent.getState("atdesk") ? -140 : -0),
+          index: 2
         };
       }
     }, "keyboard");
@@ -1539,6 +1593,7 @@ var Keyboard = class extends Section {
     }, () => {
       this.sitter.person.armTwist = [0.5, -0.5];
     }));
+    this.children[0].dom.style.bottom = "0px";
   }
   get sitter() {
     return this.parent.office.sitter;
@@ -1901,16 +1956,17 @@ function getDesk(position, rotation, screens = 1, style = {}) {
 }
 var Chair = class extends HTML {
   setRotation(rotation) {
-    this.directionAnimation.target = rotation / 360;
+    this.animations[0].target = rotation / 360;
   }
   setPosition(position) {
-    this.transform.setPosition(position);
+    this.animations[1].target = position.x;
+    this.animations[2].target = position.y;
   }
   getPosition() {
     return this.seat.transform.absolute;
   }
   getRotation() {
-    return this.directionAnimation.value * 360;
+    return this.animations[0].value * 360;
   }
   constructor(position, rotation, style = {}) {
     super({
@@ -1925,13 +1981,25 @@ var Chair = class extends HTML {
         size: new Vector2(80, 80)
       }
     });
-    this.directionAnimation = glob.addAnimation({
+    this.animations = glob.bulkAnimations([{
       duration: 300,
       mode: "wrap",
       onChange: (value) => {
         this.seat.transform.setRotation(value * 360);
       }
-    });
+    }, {
+      scale: 1e3,
+      duration: 300,
+      onChange: (value) => {
+        this.transform.setPosition(new Vector2(value, this.transform.position.y));
+      }
+    }, {
+      scale: 1e3,
+      duration: 300,
+      onChange: (value) => {
+        this.transform.setPosition(new Vector2(this.transform.position.x, value));
+      }
+    }]);
     for (let i = 0; i < 5; i++) {
       this.append(new HTML({
         style: {
@@ -2469,14 +2537,7 @@ var Office = class extends Section {
     }, {
       size: new Vector2(700, 600),
       position: new Vector2(0, 0),
-      index: 0,
-      sizer: () => {
-        return {
-          size: new Vector2(700, 600),
-          position: new Vector2(game.getState("atdesk") ? 470 : 0, 0),
-          index: 0
-        };
-      }
+      index: 0
     }, "office");
     this.game = game;
     this.mouse = false;
@@ -2681,16 +2742,9 @@ var StatBar = class _StatBar extends Section {
       index: 1,
       sizer: () => {
         return {
-          size: new Vector2(700, 20),
-          position: new Vector2(0, 0),
-          index: 1,
-          sizer: () => {
-            return {
-              size: new Vector2(700, 20),
-              position: parent.getState("atdesk") ? new Vector2(470, 560) : new Vector2(0, 560),
-              index: 5
-            };
-          }
+          size: new Vector2(700, 40),
+          position: new Vector2(0, 570),
+          index: 6
         };
       }
     }, "statbar");
@@ -3107,8 +3161,9 @@ var BusyWork4 = class extends HTML {
     this.append(this.coffee = new Coffee(this));
     this.append(this.gameover = new Gameover(this));
     this.append(this.statBar = new StatBar(this));
+    this.append(this.debug = new Debug(this));
     glob.debug = this.debug;
-    this.gridManager = new GridManager(this, [this.computer, this.keyboard, this.office, this.coffee, this.gameover, this.statBar]);
+    this.gridManager = new GridManager(this, [this.computer, this.keyboard, this.office, this.coffee, this.gameover, this.statBar, this.debug]);
     this.ticker.start();
   }
   setupTicker() {

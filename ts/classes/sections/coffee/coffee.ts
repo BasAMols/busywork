@@ -11,14 +11,17 @@ export class Coffee extends Section {
             backgroundColor: '#354c59',
             justifyContent: 'flex-start',
             overflow: 'hidden',
+            boxShadow: '0px 0px 10px 0px rgba(0, 0, 0, 0.5)',
         }, {
             size: new Vector2(0, 600),
             position: new Vector2(720, 0),
+            scale: new Vector2(1, 1),
             index: 0,
             sizer: () => {
                 return {
                     size: new Vector2(parent.getState('atcoffeemachine') ? 400 : 0, 600),
-                    position: new Vector2(720, 0),
+                    position: new Vector2(680, 200),
+                    scale: new Vector2(0.75, 0.75),
                     index: 0,
                 }
             }

@@ -1,3 +1,4 @@
+import { Animator } from '../../animator';
 import { HTML } from '../../element/element';
 import { Vector2 } from '../../math/vector2';
 import { glob } from '../../tilegame';
@@ -45,14 +46,14 @@ export function getDesk(position: Vector2, rotation: number, screens: 1 | 2 = 1,
 
 export class Chair extends HTML {
     seat: HTML;
-    directionAnimation: any;
-    positionAnimation: import("../../animator").Animator;
+    animations: Animator[];
     setRotation(rotation: number) {
-        this.directionAnimation.target = rotation / 360;
+        this.animations[0].target = rotation / 360;
     }
 
     setPosition(position: Vector2) {
-        this.transform.setPosition(position);
+        this.animations[1].target = position.x;
+        this.animations[2].target = position.y;
     }
 
     getPosition() {
@@ -60,7 +61,7 @@ export class Chair extends HTML {
     }
 
     getRotation() {
-        return this.directionAnimation.value * 360;
+        return this.animations[0].value * 360;
     }
 
     constructor(position: Vector2, rotation: number, style: Partial<CSSStyleDeclaration> = {}) {
@@ -78,13 +79,25 @@ export class Chair extends HTML {
             },  
         });
 
-        this.directionAnimation = glob.addAnimation({
+        this.animations = glob.bulkAnimations([{
             duration: 300,
             mode: 'wrap',
             onChange: (value) => {
                 this.seat.transform.setRotation(value * 360);
             }
-        });
+        }, {
+            scale: 1000,
+            duration: 300,
+            onChange: (value: number) => {
+                this.transform.setPosition(new Vector2(value, this.transform.position.y));
+            }
+        }, {
+            scale: 1000,
+            duration: 300,
+            onChange: (value: number) => {
+                this.transform.setPosition(new Vector2(this.transform.position.x, value));
+            }
+        }]);
 
         for (let i = 0; i < 5; i++) {
             //leg

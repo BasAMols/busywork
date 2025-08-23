@@ -89,13 +89,6 @@ export class Office extends Section {
             size: new Vector2(700, 600),
             position: new Vector2(0, 0),
             index: 0,
-            sizer: () => {
-                return {
-                    size: new Vector2(700, 600),
-                    position: new Vector2(game.getState('atdesk') ? 470 : 0, 0),
-                    index: 0,
-                }
-            }
         }, 'office');
 
         const wrap = this.append(new HTML({

@@ -43,7 +43,7 @@ export class GridManager {
             duration: 350,
             scale: 10,
             onChange: (value: number) => {
-                this.parent.transform.setScale(new Vector2(value , value));
+                this.parent.transform.setScale(new Vector2(value, value));
             }
         }]);
 
@@ -63,13 +63,14 @@ export class GridManager {
                 return;
             }
 
+            let width = section.gridData.size.x * section.gridData.scale.x;
+            let height = section.gridData.size.y * section.gridData.scale.y;
+
             left = left === undefined ? section.gridData.position.x : Math.min(left, section.gridData.position.x);
-            right = right === undefined ? section.gridData.position.x + section.gridData.size.x : Math.max(right, section.gridData.position.x + section.gridData.size.x);
+            right = right === undefined ? section.gridData.position.x + width : Math.max(right, section.gridData.position.x + width);
             top = top === undefined ? section.gridData.position.y : Math.min(top, section.gridData.position.y);
-            bottom = bottom === undefined ? section.gridData.position.y + section.gridData.size.y : Math.max(bottom, section.gridData.position.y + section.gridData.size.y);
+            bottom = bottom === undefined ? section.gridData.position.y + height : Math.max(bottom, section.gridData.position.y + height);
         });
-
-
 
         const size = new Vector2(right - left, bottom - top);
 
@@ -80,8 +81,8 @@ export class GridManager {
 
         this.animations[0][force ? 'force' : 'target'] = size.x;
         this.animations[1][force ? 'force' : 'target'] = size.y;
-        this.animations[2][force ? 'force' : 'target'] = position.x;
-        this.animations[3][force ? 'force' : 'target'] = position.y;
+        this.animations[2][force ? 'force' : 'target'] = position.x + (left < 0 ? -left * scale : 0);
+        this.animations[3][force ? 'force' : 'target'] = position.y + (top < 0 ? -top * scale : 0);
         this.animations[4][force ? 'force' : 'target'] = scale;
     }
 }
