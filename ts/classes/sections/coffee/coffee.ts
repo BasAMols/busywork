@@ -1,18 +1,28 @@
 import { HTML } from '../../element/element';
 import { Tile } from '../../element/tile';
-import { Utils } from '../../math/util';
 import { Vector2 } from '../../math/vector2';
 import { BusyWork } from '../../tilegame';
 import { Section } from '../../util/section';
 import { CoffeeMachine } from './assets';
 
 export class Coffee extends Section {
-    public constructor(private parent: BusyWork, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(400, 600), {
+    public constructor(private parent: BusyWork) {
+        super({
             backgroundColor: '#354c59',
             justifyContent: 'flex-start',
             overflow: 'hidden',
-        }, gridParams);
+        }, {
+            size: new Vector2(0, 600),
+            position: new Vector2(720, 0),
+            index: 0,
+            sizer: () => {
+                return {
+                    size: new Vector2(parent.getState('atcoffeemachine') ? 400 : 0, 600),
+                    position: new Vector2(720, 0),
+                    index: 0,
+                }
+            }
+        }, 'coffee');
 
 
         
@@ -78,18 +88,6 @@ export class Coffee extends Section {
         this.append(new CoffeeMachine(new Vector2(55, 240), () => {
             this.parent.office.tired = 0;
         }));
-    }
-
-    updateGrid(gridParams: [number, number, number, number]) {
-        super.updateGrid(gridParams);
-
-        if (Utils.isMobile()) {
-            this.dom.style.width = '450px';
-            this.dom.style.height = '100%';
-        } else {
-            this.dom.style.width = '100%';
-            this.dom.style.height = '600px';
-        }
     }
 
 }

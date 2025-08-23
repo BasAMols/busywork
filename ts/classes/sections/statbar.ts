@@ -1,11 +1,11 @@
-import { HTML } from '../../element/element';
-import { Flex } from '../../element/flex';
-import { Utils } from '../../math/util';
-import { Vector2 } from '../../math/vector2';
-import { TickerReturnData } from '../../ticker';
-import { BusyWork } from '../../tilegame';
-import { Icon } from '../../util/icon';
-import { Section } from '../../util/section';
+import { HTML } from '../element/element';
+import { Flex } from '../element/flex';
+import { Utils } from '../math/util';
+import { Vector2 } from '../math/vector2';
+import { TickerReturnData } from '../ticker';
+import { BusyWork } from '../tilegame';
+import { Icon } from '../util/icon';
+import { Section } from '../util/section';
 
 
 export class StatBar extends Section {
@@ -17,8 +17,8 @@ export class StatBar extends Section {
         getter: () => number;
         setter: (element: HTML, value: number) => void;
     }[] = [];
-    public constructor(private parent: BusyWork, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(700, 1), {
+    public constructor(private parent: BusyWork) {
+        super({
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
@@ -30,10 +30,25 @@ export class StatBar extends Section {
             overflow: 'visible',
             gap: '20px',
             pointerEvents: 'none',
-            width: '100%',
-            height: '100%',
-            bottom: '20px',
-        }, gridParams);
+        }, {
+            size: new Vector2(700, 20),
+            position: new Vector2(470, 590),
+            index: 1,
+            sizer: () => {
+                return {
+                    size: new Vector2(700, 20),
+                    position: new Vector2(0, 0),
+                    index: 1,
+                    sizer: () => {
+                        return {
+                            size: new Vector2(700, 20),
+                            position: parent.getState('atdesk') ? new Vector2(470, 560) : new Vector2(0, 560),
+                            index: 5,
+                        }
+                    }
+                }
+            }
+        }, 'statbar');
 
         this.addStat(StatBar.getStatBlock('person_apron', 50), 0, 0.5, () => {
             return Number(!this.parent.getState('bossinroom'));
@@ -69,7 +84,7 @@ export class StatBar extends Section {
                 textAlign: 'center',
                 whiteSpace: 'wrap',
                 boxShadow: 'inset 3px -10px 30px #0000004f, 1px -3px 7px #0000004f',
-                transition: 'margin-top 0.5s ease-in-out, opacity 0.5s ease-in-out, width 0.5s 0.5s ease-in-out',
+                transition: 'margin-top 0.5s ease-in-out, opacity 0.5s ease-in-out',
                 position: 'relative',
                 overflow: 'hidden',
                 opacity: '0',
@@ -98,9 +113,7 @@ export class StatBar extends Section {
                 stat.value = stat.getter();
                 stat.setter?.(stat.element, stat.value);
                 stat.element.setStyle({
-                    // order: index.toString(),
                     width: stat.value < stat.showOn ? '90px' : '0px',
-                    transition: stat.value < stat.showOn ? 'margin-top 0.5s 0.5s ease-in-out, width 0.5s ease-in-out, opacity 0.5s 0.5s ease-in-out' : 'margin-top 0.5s ease-in-out, width 0.5s 0.5s ease-in-out, opacity 0.5s ease-in-out',
                 });
                 stat.element.setStyle({
                     marginTop: stat.value < stat.showOn ? '0px' : '20px',

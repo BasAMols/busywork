@@ -16,7 +16,7 @@ export class Transform {
     private _rotation: number; // stored in degrees
     private _anchor: Vector2; // anchor point for transformations (relative 0-1)
     private _size: Vector2; // size of the element
-    private _responders: (({ position, scale, rotation, matrix }: { position: Vector2, scale: Vector2, rotation: number, matrix: number[]; }) => void)[] = [];
+    private _responders: (({ position, scale, rotation, matrix, size }: { position: Vector2, scale: Vector2, rotation: number, matrix: number[]; size: Vector2; }) => void)[] = [];
     private _parent?: Transform;
 
     setParent(parent: Transform) {
@@ -32,13 +32,13 @@ export class Transform {
         this._scale = options.scale ?? new Vector2(1, 1);
         this._rotation = options.rotation ?? 0;
         this._anchor = options.anchor ?? new Vector2(0, 0);
-        this._size = options.size ?? new Vector2(0, 0);
+        this._size = options.size;
         this._parent = options.parent;
     }
 
-    public setResponder(responder: ({ position, scale, rotation }: { position: Vector2, scale: Vector2, rotation: number, matrix: number[]; }) => void) {
+    public setResponder(responder: ({ position, scale, rotation, matrix, size }: { position: Vector2, scale: Vector2, rotation: number, matrix: number[]; size?: Vector2; }) => void) {
         this._responders.push(responder);
-        responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix });
+        responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix, size: this._size });
     }
 
     public get position() {
@@ -58,7 +58,7 @@ export class Transform {
     }
 
     public get size() {
-        return this._size;
+        return this._size ?? new Vector2(0, 0);
     }
 
     public setPosition(position: Vector2) {
@@ -133,8 +133,8 @@ export class Transform {
         const sin = Math.sin(radiansRotation);
 
         // Convert relative anchor (0-1) to absolute coordinates based on element size
-        const anchorX = this._anchor.x * this._size.x;
-        const anchorY = this._anchor.y * this._size.y;
+        const anchorX = this._anchor.x * (this._size?.x ?? 0);
+        const anchorY = this._anchor.y * (this._size?.y ?? 0);
 
         // Build transformation matrix directly: translate(pos + anchor) * rotate * scale * translate(-anchor)
         // This matches CSS transform-origin behavior
@@ -217,7 +217,7 @@ export class Transform {
 
     private _update() {
         this._responders.forEach(responder => {
-            responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix });
+            responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix, size: this._size });
         });
     }
 

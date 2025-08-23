@@ -1,34 +1,54 @@
+import { Animator as Animator, AnimationParams } from './animator';
 import { Timer } from './events';
 import { glob } from './tilegame';
 
+
 export type TickerReturnData = {
-    interval: number, intervalS3: number, intervalS10: number, intervalS20: number, totalTime: number, total: number, frameRate: number, frame: number, maxRate: number, time: number; 
+    interval: number,
+    intervalS3: number,
+    intervalS10: number, 
+    intervalS20: number,
+    totalTime: number,
+    total: number,
+    frameRate: number,
+    frame: number,
+    maxRate: number,
+    time: number;
 };
 export type TickerCallback = (obj: TickerReturnData) => void;
 export class Ticker {
+    private animations: Animator[] = [];
     private _running: boolean = false;
     private started: boolean = false;
     private pauzedTime: number = 0;
-    private intervalKeeper:number[] = []
+    private intervalKeeper: number[] = [];
     private id: number;
-    private maxRate: number = 0; 
+    private maxRate: number = 0;
     public timer: Timer;
+    public mode: 'all' |'animations' | 'callbacks' = 'all';
+
+    addAnimation(params: AnimationParams): Animator {
+        const name = Math.random().toString(36).substring(2, 15);
+        this.animations.push(new Animator(params));
+        return this.animations[this.animations.length - 1];
+    }
+
     public get running(): boolean {
         return this._running;
     }
     public set running(value: boolean) {
         this._running = value;
-        
+
         if (value) {
             this.pTime = performance.now() - this.pauzedTime;
             this.id = window.requestAnimationFrame(this.frame.bind(this));
         } else {
             window.cancelAnimationFrame(this.id);
-            this.pauzedTime = performance.now() - this.pTime
-            
+            this.pauzedTime = performance.now() - this.pTime;
+
         }
     }
-    constructor(game: {tick: (t: TickerReturnData) => void}) {
+    constructor(game: { tick: (t: TickerReturnData) => void; }) {
         document.addEventListener("visibilitychange", () => {
             if (this.started) {
                 this.running = !document.hidden;
@@ -51,28 +71,28 @@ export class Ticker {
     private pTime: number;
     private frameN: number = 0;
 
-    private averagedInterval(count: number, interval: number){
-        const average = this.intervalKeeper.slice(0,count).reduce((partialSum, a) => partialSum + a, 0) / count;
-        return Math.abs(interval - average) > 20?interval: average;
+    private averagedInterval(count: number, interval: number) {
+        const average = this.intervalKeeper.slice(0, count).reduce((partialSum, a) => partialSum + a, 0) / count;
+        return Math.abs(interval - average) > 20 ? interval : average;
     }
 
     public frame(timeStamp: number) {
 
         if (this.running) {
             const interval = timeStamp - this.pTime;
-            this.intervalKeeper = this.intervalKeeper.slice(1,20);
+            this.intervalKeeper = this.intervalKeeper.slice(1, 20);
             this.intervalKeeper.push(interval);
-            while(this.intervalKeeper.length<20){
+            while (this.intervalKeeper.length < 20) {
                 this.intervalKeeper.push(interval);
             }
-            
+
             this.pTime = timeStamp;
             this.frameN++;
             this.maxRate = Math.max(this.maxRate, 1000 / interval);
             glob.frame = this.frameN;
             const o = {
                 interval,
-                totalTime: this.pTime - this.sTime ,
+                totalTime: this.pTime - this.sTime,
                 total: this.eTime,
                 frameRate: 1000 / interval,
                 frame: this.frameN,
@@ -85,10 +105,17 @@ export class Ticker {
             glob.ticker = o;
 
             this.timer.tick(o);
+            if (this.mode === 'all' || this.mode === 'animations') {
+                this.animations.forEach((a) => {
+                    a.tick(o);
+                });
+            }
 
-            this.callbacks.forEach((c) => {
-                c(o);
-            });
+            if (this.mode === 'all' || this.mode === 'callbacks') {
+                this.callbacks.forEach((c) => {
+                    c(o);
+                });
+            }
 
             this.id = window.requestAnimationFrame(this.frame.bind(this));
         }

@@ -19,4 +19,7 @@ export class Utils {
     static isMobile(): boolean {
         return glob.mobile;
     }
+    static mod(n: number, d: number): number {
+        return ((n % d) + d) % d;
+    }
 }

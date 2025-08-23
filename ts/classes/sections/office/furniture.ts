@@ -1,5 +1,6 @@
 import { HTML } from '../../element/element';
 import { Vector2 } from '../../math/vector2';
+import { glob } from '../../tilegame';
 import { getPaper } from './clutter';
 import { getScreen, getKeyboard, getPhone } from './prop';
 
@@ -44,10 +45,10 @@ export function getDesk(position: Vector2, rotation: number, screens: 1 | 2 = 1,
 
 export class Chair extends HTML {
     seat: HTML;
+    directionAnimation: any;
+    positionAnimation: import("../../animator").Animator;
     setRotation(rotation: number) {
-        if (this.seat.transform.rotation !== rotation) {
-            // this.seat.transform.setRotation(rotation);
-        }
+        this.directionAnimation.target = rotation / 360;
     }
 
     setPosition(position: Vector2) {
@@ -58,12 +59,15 @@ export class Chair extends HTML {
         return this.seat.transform.absolute;
     }
 
+    getRotation() {
+        return this.directionAnimation.value * 360;
+    }
+
     constructor(position: Vector2, rotation: number, style: Partial<CSSStyleDeclaration> = {}) {
         super({
             style: {
                 width: '80px',
                 height: '80px',
-                transition: 'transform 0.8s ease-in-out',
                 ...style,
             },
             transform: {
@@ -74,6 +78,13 @@ export class Chair extends HTML {
             },  
         });
 
+        this.directionAnimation = glob.addAnimation({
+            duration: 300,
+            mode: 'wrap',
+            onChange: (value) => {
+                this.seat.transform.setRotation(value * 360);
+            }
+        });
 
         for (let i = 0; i < 5; i++) {
             //leg
@@ -100,7 +111,6 @@ export class Chair extends HTML {
                 backgroundColor: '#646464',
                 filter: 'drop-shadow(3px 4px 5px #00000040)',
                 borderRadius: '10px',
-                transition: 'transform 0.8s ease-in-out, left 0.8s ease-in-out, top 0.8s ease-in-out',
             },
             transform: {
                 position: new Vector2(5, 0),

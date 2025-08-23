@@ -7,6 +7,7 @@ export class Player extends Walker {
         super({
             initialPosition: new Vector2(300, 300), initialRotation: -1, hair: 'none', walkspeed: 1.2
         });
+        this.idle();
     }
 
     public setDestination(destination: Vector2): void {
@@ -22,5 +23,6 @@ export class Player extends Walker {
         }
         super.setDestination(destination);
     }
+
 
 }

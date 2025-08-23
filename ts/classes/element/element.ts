@@ -21,6 +21,7 @@ export class HTML {
     public readonly dom: HTMLElement;
     public readonly transform: Transform;
     public children: HTML[] = [];
+    public absolute: boolean = false;
     public constructor(options: HTMLOptions = {}) {
         this.options = options;
         this.type = this.options.type || 'div';
@@ -42,10 +43,14 @@ export class HTML {
         }
         this.setStyle(this.options.style);
         this.transform = new Transform(this.options.transform);
-        this.transform.setResponder(({ matrix, position, scale, rotation }) => {
+        this.transform.setResponder(({ matrix, position, scale, rotation, size }) => {
             // Set transform-origin to 0,0 to ensure CSS doesn't interfere with our mathematical anchor point handling
             this.dom.style.transformOrigin = '0 0';
             this.dom.style.transform = `matrix3d(${matrix.join(',')})`;
+            if (size) {
+                this.dom.style.width = size.x + 'px';
+                this.dom.style.height = size.y + 'px';
+            }
         });
 
         if (options.onMouseDown) {
@@ -83,7 +88,7 @@ export class HTML {
         }
     }
 
-    public append(element: HTML, absolute: boolean = false): HTML {
+    public append(element: HTML, absolute: boolean = this.absolute): HTML {
         this.dom.appendChild(element.dom);
         if (!element.transform.hasParent() && !absolute) {
             element.transform.setParent(this.transform);

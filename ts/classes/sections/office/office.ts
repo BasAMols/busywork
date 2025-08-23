@@ -79,15 +79,24 @@ export class Office extends Section {
     chair: Chair;
     overlay: HTML;
 
-    public constructor(private game: BusyWork, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(700, 600), {
+    public constructor(private game: BusyWork) {
+        super({
             backgroundColor: '#354c59',
-            width: '100%',
-            height: '600px',
             overflow: 'hidden',
             display: 'flex',
             justifyContent: 'center',
-        }, gridParams);
+        }, {
+            size: new Vector2(700, 600),
+            position: new Vector2(0, 0),
+            index: 0,
+            sizer: () => {
+                return {
+                    size: new Vector2(700, 600),
+                    position: new Vector2(game.getState('atdesk') ? 470 : 0, 0),
+                    index: 0,
+                }
+            }
+        }, 'office');
 
         const wrap = this.append(new HTML({
             style: {
@@ -145,7 +154,6 @@ export class Office extends Section {
         wrap.append(this.sitter);
 
 
-
         wrap.append(new Chair(new Vector2(130, 390), 270, {
             filter: 'saturate(0.4)',
         }));
@@ -158,14 +166,6 @@ export class Office extends Section {
             filter: 'saturate(0.4)',
         })) as Chair;
 
-        wrap.append(getDesk(new Vector2(470, 220), 90, 1, {
-            filter: 'saturate(0.4)',
-        }));
-
-        wrap.append(getDesk(new Vector2(-70, 360), 270, 2, {
-            filter: 'saturate(0.4)',
-        }));
-
         wrap.append(getPlant(new Vector2(30, 30), 0, 6, 80));
         wrap.append(getPlant(new Vector2(590, 30), 40, 7, 50));
         // wrap.append(getPlant(new Vector2(590, 490), 40, 9, 40));
@@ -175,6 +175,14 @@ export class Office extends Section {
         wrap.append(new Sitter({ initialPosition: new Vector2(520, 240), hair: 'full', initialRotation: 120, armPosition: [0, 0], }) as Sitter);
         wrap.append(new Sitter({ initialPosition: new Vector2(170, 430), hair: 'none', initialRotation: -90, armPosition: [1, 0] }) as Sitter);
 
+
+        wrap.append(getDesk(new Vector2(470, 220), 90, 1, {
+            filter: 'saturate(0.4)',
+        }));
+
+        wrap.append(getDesk(new Vector2(-70, 360), 270, 2, {
+            filter: 'saturate(0.4)',
+        }));
 
         this.npc = new Boss(game, new Vector2(350, 700), 0, 'half');
         wrap.append(this.npc);
@@ -202,8 +210,6 @@ export class Office extends Section {
         this.overlay.dom.addEventListener('pointermove', (e) => {
             if (this.mouse) {
                 this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-            } else {
-                this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
             }
         });
 
@@ -249,19 +255,5 @@ export class Office extends Section {
                 });
             }
         }
-    }
-
-    updateGrid(gridParams: [number, number, number, number]) {
-        super.updateGrid(gridParams);
-
-
-        if (Utils.isMobile()) {
-            this.dom.style.width = '100%';
-            this.dom.style.height = '100%';
-        } else {
-            this.dom.style.width = '100%';
-            this.dom.style.height = '600px';
-        }
-
     }
 }

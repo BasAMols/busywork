@@ -42,6 +42,20 @@ export class Vector2 {
         return dum;
     }
 
+    public div(...v: number[]): Vector2 {
+        const dum = this.clone();
+        v.forEach(v => {
+            if (v === 0) {
+                dum.x = 0;
+                dum.y = 0;
+            } else {
+                dum.x /= v;
+                dum.y /= v;
+            }
+        });
+        return dum;
+    }
+
     public cross(v: Vector2): number {
         return this.x * v.y - this.y * v.x;
     }
@@ -98,4 +112,7 @@ export class Vector2 {
         return dum;
     }
     
+    [Symbol.iterator](): Iterator<number> {
+        return this.toArray()[Symbol.iterator]();
+    }
 }

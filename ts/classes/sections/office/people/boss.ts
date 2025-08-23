@@ -1,5 +1,4 @@
 import { HTML } from '../../../element/element';
-import { Utils } from '../../../math/util';
 import { Vector2 } from '../../../math/vector2';
 import { TickerReturnData } from '../../../ticker';
 import { BusyWork, glob } from '../../../tilegame';
@@ -11,8 +10,6 @@ import { Walker } from './walker';
 export class Boss extends Walker {
 
     private movement: Movement;
-    private rotation: number = 0;
-    private rotationTarget: number = 0;
 
     public waitTime: number = 0;
     public waitTimeMax: number = 10000;
@@ -53,8 +50,8 @@ export class Boss extends Walker {
         ], (speed, velocity, state, phase) => {
             this.phase = phase;
             if (state === 'walking') {
-                this.rotationTarget = velocity.angle();
-                this.walkCycle(speed);
+                this.turnAnimation.target = velocity.angle() / 360;
+                // this.walkCycle(speed);
             }
             if (state === 'waiting') {
                 this.idle();
@@ -68,6 +65,7 @@ export class Boss extends Walker {
         this.person.append(this.paper);
 
         this.hasPaper = false;
+        this.idle();
     }
 
     private _hasPaper: boolean = true;
@@ -77,30 +75,19 @@ export class Boss extends Walker {
     public set hasPaper(value: boolean) {
         this._hasPaper = value;
         this.paper.visible = value;
-        if (!value) {
-            this.person.armPosition = [0, 0];
-        }
     }
 
     public phase: number = 0;
 
     public tick(obj: TickerReturnData) {
         // super.tick(obj);
-        this.movement.tick(obj);
 
-        if (Math.abs(this.rotation - this.rotationTarget) > 1) {
-            if (this.rotation - this.rotationTarget > 180) {
-                this.rotationTarget = this.rotationTarget + 360;
-            } else if (this.rotation - this.rotationTarget < -180) {
-                this.rotationTarget = this.rotationTarget - 360;
-            }
-
-            this.rotation = Utils.lerp(this.rotation, this.rotationTarget, 0.05);
-            this.transform.setRotation(this.rotation);
+        if (glob.params.boss) {
+            this.movement.tick(obj);
         }
 
         if (this.hasPaper) {
-            this.person.armPosition = [0.4, this.person.armPosition[1]];
+            this.person.armPosition = [0.9, this.person.armPosition[1]];
         }
     }
 }

@@ -1,96 +1,79 @@
-import { Grid } from './element/grid';
+import { Animator } from './animator';
 import { Vector2 } from './math/vector2';
+import { BusyWork, glob } from './tilegame';
+import { Section } from './util/section';
 
 export class GridManager {
+    animations: Animator[];
 
-    private columns: number[] = [450, 700, 450];
-    private rows: number[] = [0, 350, 230, 50];
+    public constructor(
+        private parent: BusyWork,
+        private sections: Section[] = []
 
-    public constructor(private grid: Grid, columns: number[], rows: number[], private gap: number = 20) {
-        this.columns = columns;
-        this.rows = rows;
-        this.updateGrid();
+    ) {
+
+        this.animations = glob.bulkAnimations([{
+            duration: 0,
+            onChange: (value: number) => {
+                this.parent.transform.setSize(new Vector2(value * 10000, this.parent.transform.size.y));
+            }
+        }, {
+            duration: 0,
+            onChange: (value: number) => {
+                this.parent.transform.setSize(new Vector2(this.parent.transform.size.x,value * 10000));
+            }
+        }, {
+            duration: 350,
+            onChange: (value: number) => {
+                this.parent.transform.setPosition(new Vector2(value * 10000, this.parent.transform.position.y));
+            }
+        }, {
+            duration: 350,
+            onChange: (value: number) => {
+                this.parent.transform.setPosition(new Vector2(this.parent.transform.position.x, value * 10000));
+            }
+        }, {
+            duration: 350,
+            onChange: (value: number) => {
+                this.parent.transform.setScale(new Vector2(value * 10, value * 10));
+            }
+        }]);
+
+        this.tick(false);
+
+
     }
 
-    setColumnWidth(index: number, width: number) {
-        this.columns[index] = width;
-    }
 
+    tick(force: boolean = false) {
+        let left: number, right: number, top: number, bottom: number;
 
+        this.sections.forEach((section) => {
+            section.updateGrid();
 
-    setColumns(columns: number[]) {
-        this.columns = columns;
-    }
-
-    setRowHeight(index: number, height: number) {
-        this.rows[index] = height;
-    }
-
-    setBulkRowHeight(height: number, except: number[] = []) {
-        this.rows.forEach((row, index) => {
-            this.setRowHeight(index, except.includes(index) ? row : height);
-        });
-    }
-
-    setBulkColumnWidth(width: number, except: number[] = []) {
-        this.columns.forEach((column, index) => {
-            this.setColumnWidth(index, except.includes(index) ? column : width);
-        });
-    }
-
-    setRows(rows: number[]) {
-        this.rows = rows;
-    }
-
-    getColumns() {
-        let columns: number[] = [];
-        let leftColumn = false;
-        this.columns.forEach((width, index) => {
-
-            if (index > 0) {
-                if (leftColumn && width !== 0) {
-                    columns.push(this.gap);
-                } else {
-                    columns.push(0);
-                }
+            if (section.gridData.size.x === 0 || section.gridData.size.y === 0) {
+                return;
             }
 
-            if (width !== 0) {
-                leftColumn = true;
-            }
-
-            columns.push(width);
+            left = left === undefined ? section.gridData.position.x : Math.min(left, section.gridData.position.x);
+            right = right === undefined ? section.gridData.position.x + section.gridData.size.x : Math.max(right, section.gridData.position.x + section.gridData.size.x);
+            top = top === undefined ? section.gridData.position.y : Math.min(top, section.gridData.position.y);
+            bottom = bottom === undefined ? section.gridData.position.y + section.gridData.size.y : Math.max(bottom, section.gridData.position.y + section.gridData.size.y);
         });
-        return columns;
-    }
-    getRows() {
-        let rows: number[] = [];
-        let leftRow = false;
-        this.rows.forEach((width, index) => {
 
-            if (index > 0) {
-                if (leftRow && width !== 0) {
-                    rows.push(this.gap);
-                } else {
-                    rows.push(0);
-                }
-            }
 
-            if (width !== 0) {
-                leftRow = true;
-            }
 
-            rows.push(width);
-        });
-        return rows;
-    }
+        const size = new Vector2(right - left, bottom - top);
 
-    getSize() {
-        return new Vector2(this.getColumns().reduce((a, b) => a + b, 0), this.getRows().reduce((a, b) => a + b, 0));
-    }
+        const windowSize = new Vector2(window.innerWidth, window.innerHeight);
+        const scale = Math.min(windowSize.x / (size.x + 60), windowSize.y / (size.y + 60));
+        // const scale = 1;
+        const position = windowSize.sub(size.scale(scale)).div(2);
 
-    updateGrid() {
-        this.grid.setTemplateColumns(this.getColumns().join('px ') + 'px');
-        this.grid.setTemplateRows(this.getRows().join('px ') + 'px');
+        this.animations[0][force ? 'force' : 'target'] = size.x / 10000;
+        this.animations[1][force ? 'force' : 'target'] = size.y / 10000;
+        this.animations[2][force ? 'force' : 'target'] = position.x / 10000;
+        this.animations[3][force ? 'force' : 'target'] = position.y / 10000;
+        this.animations[4][force ? 'force' : 'target'] = scale / 10;
     }
 }

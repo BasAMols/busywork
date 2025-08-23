@@ -51,6 +51,19 @@ var Vector2 = class _Vector2 {
     });
     return dum;
   }
+  div(...v) {
+    const dum = this.clone();
+    v.forEach((v2) => {
+      if (v2 === 0) {
+        dum.x = 0;
+        dum.y = 0;
+      } else {
+        dum.x /= v2;
+        dum.y /= v2;
+      }
+    });
+    return dum;
+  }
   cross(v) {
     return this.x * v.y - this.y * v.x;
   }
@@ -96,6 +109,9 @@ var Vector2 = class _Vector2 {
     dum.y /= len;
     return dum;
   }
+  [Symbol.iterator]() {
+    return this.toArray()[Symbol.iterator]();
+  }
 };
 
 // ts/classes/math/transform.ts
@@ -103,12 +119,12 @@ var Transform = class {
   constructor(options = {}) {
     // size of the element
     this._responders = [];
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     this._position = (_a = options.position) != null ? _a : new Vector2(0, 0);
     this._scale = (_b = options.scale) != null ? _b : new Vector2(1, 1);
     this._rotation = (_c = options.rotation) != null ? _c : 0;
     this._anchor = (_d = options.anchor) != null ? _d : new Vector2(0, 0);
-    this._size = (_e = options.size) != null ? _e : new Vector2(0, 0);
+    this._size = options.size;
     this._parent = options.parent;
   }
   setParent(parent) {
@@ -120,7 +136,7 @@ var Transform = class {
   }
   setResponder(responder) {
     this._responders.push(responder);
-    responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix });
+    responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix, size: this._size });
   }
   get position() {
     return this._position;
@@ -135,7 +151,8 @@ var Transform = class {
     return this._anchor;
   }
   get size() {
-    return this._size;
+    var _a;
+    return (_a = this._size) != null ? _a : new Vector2(0, 0);
   }
   setPosition(position) {
     this._position = position;
@@ -180,11 +197,12 @@ var Transform = class {
     );
   }
   getLocalMatrix() {
+    var _a, _b, _c, _d;
     const radiansRotation = this._rotation * (Math.PI / 180);
     const cos = Math.cos(radiansRotation);
     const sin = Math.sin(radiansRotation);
-    const anchorX = this._anchor.x * this._size.x;
-    const anchorY = this._anchor.y * this._size.y;
+    const anchorX = this._anchor.x * ((_b = (_a = this._size) == null ? void 0 : _a.x) != null ? _b : 0);
+    const anchorY = this._anchor.y * ((_d = (_c = this._size) == null ? void 0 : _c.y) != null ? _d : 0);
     const scaleX = this._scale.x;
     const scaleY = this._scale.y;
     const a = scaleX * cos;
@@ -249,7 +267,7 @@ var Transform = class {
   }
   _update() {
     this._responders.forEach((responder) => {
-      responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix });
+      responder({ position: this.position, scale: this.scale, rotation: this.rotation, matrix: this.matrix, size: this._size });
     });
   }
   setMatrix(matrix) {
@@ -283,6 +301,7 @@ var Transform = class {
 var HTML = class {
   constructor(options = {}) {
     this.children = [];
+    this.absolute = false;
     this._visible = true;
     var _a;
     this.options = options;
@@ -305,9 +324,13 @@ var HTML = class {
     }
     this.setStyle(this.options.style);
     this.transform = new Transform(this.options.transform);
-    this.transform.setResponder(({ matrix, position, scale, rotation }) => {
+    this.transform.setResponder(({ matrix, position, scale, rotation, size }) => {
       this.dom.style.transformOrigin = "0 0";
       this.dom.style.transform = "matrix3d(".concat(matrix.join(","), ")");
+      if (size) {
+        this.dom.style.width = size.x + "px";
+        this.dom.style.height = size.y + "px";
+      }
     });
     if (options.onMouseDown) {
       this.dom.addEventListener("pointerdown", (e) => {
@@ -341,7 +364,7 @@ var HTML = class {
       });
     }
   }
-  append(element, absolute = false) {
+  append(element, absolute = this.absolute) {
     this.dom.appendChild(element.dom);
     if (!element.transform.hasParent() && !absolute) {
       element.transform.setParent(this.transform);
@@ -382,148 +405,60 @@ var HTML = class {
   }
 };
 
-// ts/classes/element/flex.ts
-var Flex = class extends HTML {
-  constructor(options) {
-    super(__spreadProps(__spreadValues({}, options), { classList: [...options.classList || [], "_flex"] }));
-    this.setStyle({
-      flexDirection: options.flexDirection,
-      justifyContent: options.justifyContent,
-      alignItems: options.alignItems,
-      alignContent: options.alignContent,
-      flexWrap: options.flexWrap,
-      gap: "".concat(options.gap, "px")
-    });
-    this.setStyle(options.style || {});
-  }
-  set visible(visible) {
-    this._visible = visible;
-    this.dom.style.display = visible ? "flex" : "none";
-  }
-  get visible() {
-    return this._visible;
-  }
-};
-
-// ts/classes/element/grid.ts
-var Grid = class extends HTML {
-  constructor(options) {
-    super(__spreadProps(__spreadValues({}, options), { classList: [...options.classList || [], "_grid"] }));
-    this.setStyle({
-      gridTemplateColumns: options.columns || "1fr",
-      gridTemplateRows: options.rows || "1fr",
-      gap: "".concat(options.gap, "px"),
-      alignContent: options.alignContent || "center",
-      alignItems: options.alignItems || "center",
-      justifyContent: options.justifyContent || "center",
-      justifyItems: options.justifyItems || "center"
-    });
-    this.setStyle(options.style || {});
-  }
-  setTemplateColumns(columns) {
-    this.setStyle({
-      gridTemplateColumns: columns
-    });
-  }
-  setTemplateRows(rows) {
-    this.setStyle({
-      gridTemplateRows: rows
-    });
-  }
-};
-
 // ts/classes/gridManager.ts
 var GridManager = class {
-  constructor(grid, columns, rows, gap = 20) {
-    this.grid = grid;
-    this.gap = gap;
-    this.columns = [450, 700, 450];
-    this.rows = [0, 350, 230, 50];
-    this.columns = columns;
-    this.rows = rows;
-    this.updateGrid();
-  }
-  setColumnWidth(index, width) {
-    this.columns[index] = width;
-  }
-  setColumns(columns) {
-    this.columns = columns;
-  }
-  setRowHeight(index, height) {
-    this.rows[index] = height;
-  }
-  setBulkRowHeight(height, except = []) {
-    this.rows.forEach((row, index) => {
-      this.setRowHeight(index, except.includes(index) ? row : height);
-    });
-  }
-  setBulkColumnWidth(width, except = []) {
-    this.columns.forEach((column, index) => {
-      this.setColumnWidth(index, except.includes(index) ? column : width);
-    });
-  }
-  setRows(rows) {
-    this.rows = rows;
-  }
-  getColumns() {
-    let columns = [];
-    let leftColumn = false;
-    this.columns.forEach((width, index) => {
-      if (index > 0) {
-        if (leftColumn && width !== 0) {
-          columns.push(this.gap);
-        } else {
-          columns.push(0);
-        }
+  constructor(parent, sections = []) {
+    this.parent = parent;
+    this.sections = sections;
+    this.animations = glob.bulkAnimations([{
+      duration: 0,
+      onChange: (value) => {
+        this.parent.transform.setSize(new Vector2(value * 1e4, this.parent.transform.size.y));
       }
-      if (width !== 0) {
-        leftColumn = true;
+    }, {
+      duration: 0,
+      onChange: (value) => {
+        this.parent.transform.setSize(new Vector2(this.parent.transform.size.x, value * 1e4));
       }
-      columns.push(width);
+    }, {
+      duration: 350,
+      onChange: (value) => {
+        this.parent.transform.setPosition(new Vector2(value * 1e4, this.parent.transform.position.y));
+      }
+    }, {
+      duration: 350,
+      onChange: (value) => {
+        this.parent.transform.setPosition(new Vector2(this.parent.transform.position.x, value * 1e4));
+      }
+    }, {
+      duration: 350,
+      onChange: (value) => {
+        this.parent.transform.setScale(new Vector2(value * 10, value * 10));
+      }
+    }]);
+    this.tick(false);
+  }
+  tick(force = false) {
+    let left, right, top, bottom;
+    this.sections.forEach((section) => {
+      section.updateGrid();
+      if (section.gridData.size.x === 0 || section.gridData.size.y === 0) {
+        return;
+      }
+      left = left === void 0 ? section.gridData.position.x : Math.min(left, section.gridData.position.x);
+      right = right === void 0 ? section.gridData.position.x + section.gridData.size.x : Math.max(right, section.gridData.position.x + section.gridData.size.x);
+      top = top === void 0 ? section.gridData.position.y : Math.min(top, section.gridData.position.y);
+      bottom = bottom === void 0 ? section.gridData.position.y + section.gridData.size.y : Math.max(bottom, section.gridData.position.y + section.gridData.size.y);
     });
-    return columns;
-  }
-  getRows() {
-    let rows = [];
-    let leftRow = false;
-    this.rows.forEach((width, index) => {
-      if (index > 0) {
-        if (leftRow && width !== 0) {
-          rows.push(this.gap);
-        } else {
-          rows.push(0);
-        }
-      }
-      if (width !== 0) {
-        leftRow = true;
-      }
-      rows.push(width);
-    });
-    return rows;
-  }
-  getSize() {
-    return new Vector2(this.getColumns().reduce((a, b) => a + b, 0), this.getRows().reduce((a, b) => a + b, 0));
-  }
-  updateGrid() {
-    this.grid.setTemplateColumns(this.getColumns().join("px ") + "px");
-    this.grid.setTemplateRows(this.getRows().join("px ") + "px");
-  }
-};
-
-// ts/classes/math/util.ts
-var Utils = class {
-  static clamp(value, min, max) {
-    if (typeof value === "number" && typeof min === "number" && typeof max === "number") {
-      return Math.max(min, Math.min(value, max));
-    } else if (value instanceof Vector2 && min instanceof Vector2 && max instanceof Vector2) {
-      return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
-    }
-  }
-  static lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-  static isMobile() {
-    return glob.mobile;
+    const size = new Vector2(right - left, bottom - top);
+    const windowSize = new Vector2(window.innerWidth, window.innerHeight);
+    const scale = Math.min(windowSize.x / (size.x + 60), windowSize.y / (size.y + 60));
+    const position = windowSize.sub(size.scale(scale)).div(2);
+    this.animations[0][force ? "force" : "target"] = size.x / 1e4;
+    this.animations[1][force ? "force" : "target"] = size.y / 1e4;
+    this.animations[2][force ? "force" : "target"] = position.x / 1e4;
+    this.animations[3][force ? "force" : "target"] = position.y / 1e4;
+    this.animations[4][force ? "force" : "target"] = scale / 10;
   }
 };
 
@@ -568,26 +503,78 @@ var Tile = class extends HTML {
 
 // ts/classes/util/section.ts
 var Section = class extends HTML {
-  constructor(size, style, gridParams = [1, 1, 1, 1]) {
+  constructor(style, gridData, name) {
     super({
       style: __spreadValues({
-        width: size.x + "px",
-        height: size.y + "px",
-        // boxShadow: '0px 0px 200px #0000004a',
-        transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1), margin-left 1s cubic-bezier(0.4, 0, 0.2, 1)",
         overflow: "hidden",
-        borderRadius: "10px",
-        gridColumn: gridParams[0] + " / span " + gridParams[1],
-        gridRow: gridParams[2] + " / span " + gridParams[3]
+        borderRadius: "10px"
       }, style),
       transform: {
-        size
+        anchor: new Vector2(0.5, 0.5)
       }
     });
+    this.gridData = {
+      size: new Vector2(0, 0),
+      position: new Vector2(0, 0),
+      index: 0
+    };
+    this.absolute = true;
+    this.gridData = gridData;
+    this.name = name;
+    this.dom.classList.add("section-".concat(name));
+    this.animations = glob.bulkAnimations([{
+      duration: 350,
+      onChange: (value) => {
+        this.transform.setSize(new Vector2(value * 1e3, this.transform.size.y));
+      }
+    }, {
+      duration: 350,
+      onChange: (value) => {
+        this.transform.setSize(new Vector2(this.transform.size.x, value * 1e3));
+      }
+    }, {
+      duration: 350,
+      onChange: (value) => {
+        this.transform.setPosition(new Vector2(value * 1e3, this.transform.position.y));
+      }
+    }, {
+      duration: 350,
+      onChange: (value) => {
+        this.transform.setPosition(new Vector2(this.transform.position.x, value * 1e3));
+      }
+    }]);
   }
-  updateGrid(gridParams) {
-    this.dom.style.gridColumn = gridParams[0] + " / span " + gridParams[1];
-    this.dom.style.gridRow = gridParams[2] + " / span " + gridParams[3];
+  updateGrid() {
+    var _a, _b;
+    Object.assign(this.gridData, (_b = (_a = this.gridData).sizer) == null ? void 0 : _b.call(_a));
+    this.animations[0].target = this.gridData.size.x / 1e3;
+    this.animations[1].target = this.gridData.size.y / 1e3;
+    this.animations[2].target = this.gridData.position.x / 1e3;
+    this.animations[3].target = this.gridData.position.y / 1e3;
+    this.dom.style.zIndex = this.gridData.index.toString();
+  }
+};
+
+// ts/classes/element/flex.ts
+var Flex = class extends HTML {
+  constructor(options) {
+    super(__spreadProps(__spreadValues({}, options), { classList: [...options.classList || [], "_flex"] }));
+    this.setStyle({
+      flexDirection: options.flexDirection,
+      justifyContent: options.justifyContent,
+      alignItems: options.alignItems,
+      alignContent: options.alignContent,
+      flexWrap: options.flexWrap,
+      gap: "".concat(options.gap, "px")
+    });
+    this.setStyle(options.style || {});
+  }
+  set visible(visible) {
+    this._visible = visible;
+    this.dom.style.display = visible ? "flex" : "none";
+  }
+  get visible() {
+    return this._visible;
   }
 };
 
@@ -986,12 +973,23 @@ var Cup = class extends HTML {
 
 // ts/classes/sections/coffee/coffee.ts
 var Coffee = class extends Section {
-  constructor(parent, gridParams) {
-    super(new Vector2(400, 600), {
+  constructor(parent) {
+    super({
       backgroundColor: "#354c59",
       justifyContent: "flex-start",
       overflow: "hidden"
-    }, gridParams);
+    }, {
+      size: new Vector2(0, 600),
+      position: new Vector2(720, 0),
+      index: 0,
+      sizer: () => {
+        return {
+          size: new Vector2(parent.getState("atcoffeemachine") ? 400 : 0, 600),
+          position: new Vector2(720, 0),
+          index: 0
+        };
+      }
+    }, "coffee");
     this.parent = parent;
     this.append(new Tile({
       tileSize: new Vector2(80, 120),
@@ -1051,16 +1049,6 @@ var Coffee = class extends Section {
     this.append(new CoffeeMachine(new Vector2(55, 240), () => {
       this.parent.office.tired = 0;
     }));
-  }
-  updateGrid(gridParams) {
-    super.updateGrid(gridParams);
-    if (Utils.isMobile()) {
-      this.dom.style.width = "450px";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "600px";
-    }
   }
 };
 
@@ -1135,14 +1123,25 @@ var Ease = {
 
 // ts/classes/sections/computer/computer.ts
 var Computer = class extends Section {
-  constructor(parent, gridParams) {
-    super(new Vector2(450, 350), {
+  constructor(parent) {
+    super({
       backgroundColor: "#90857f",
       width: "100%",
       height: "350px",
       justifyContent: "flex-start",
       overflow: "hidden"
-    }, gridParams);
+    }, {
+      size: new Vector2(0, 350),
+      position: new Vector2(0, 0),
+      index: 0,
+      sizer: () => {
+        return {
+          size: new Vector2(parent.getState("atdesk") ? 450 : 0, 350),
+          position: new Vector2(0, 0),
+          index: 0
+        };
+      }
+    }, "computer");
     this.parent = parent;
     this._text = "";
     this._code = void 0;
@@ -1329,50 +1328,12 @@ var Computer = class extends Section {
       });
     }
   }
-  updateGrid(gridParams) {
-    super.updateGrid(gridParams);
-    if (Utils.isMobile()) {
-      this.dom.style.width = "450px";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "350px";
-    }
-  }
-};
-
-// ts/classes/sections/debug.ts
-var Debug = class extends Section {
-  constructor(parent, gridParams) {
-    super(new Vector2(700, 20), {
-      transition: "width 0.8s ease-in-out, height 0.8s ease-in-out",
-      display: "flex",
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: "10px",
-      boxSizing: "border-box",
-      backgroundColor: "transparent",
-      boxShadow: "none",
-      overflow: "visible",
-      pointerEvents: "none",
-      background: "#3c5561",
-      width: "100%",
-      height: "100%",
-      color: "#fff",
-      fontFamily: "monospace",
-      fontSize: "24px",
-      padding: "0 10px"
-    }, gridParams);
-    this.parent = parent;
-  }
 };
 
 // ts/classes/sections/gameover.ts
 var Gameover = class extends Section {
-  constructor(parent, gridParams) {
-    super(new Vector2(700, 20), {
-      transition: "width 0.8s ease-in-out, height 0.8s ease-in-out, opacity 0.8s ease-in-out",
+  constructor(parent) {
+    super({
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -1387,7 +1348,18 @@ var Gameover = class extends Section {
       height: "100%",
       padding: "50px",
       overflow: "hidden"
-    }, gridParams);
+    }, {
+      size: new Vector2(700, 600),
+      position: new Vector2(470, 0),
+      index: 2,
+      sizer: () => {
+        return {
+          size: new Vector2(700, 600),
+          position: new Vector2(0, 0),
+          index: parent.getState("gameover") ? 2 : -1
+        };
+      }
+    }, "gameover");
     this.parent = parent;
     this.append(this.text1 = new HTML({
       style: {
@@ -1439,10 +1411,9 @@ var Gameover = class extends Section {
   }
   trigger() {
     this.opacity = 0.8;
-    glob.game.ticker.stop();
+    glob.game.ticker.mode = "animations";
     this.parent.addState("atdesk", false);
     this.parent.addState("atcoffeemachine", false);
-    this.parent.updateGridSize(true);
     this.text2.setText("".concat(this.parent.office.npc.collected, " report").concat(this.parent.office.npc.collected === 1 ? "" : "s", " completed"));
     this.button.dom.style.pointerEvents = "auto";
   }
@@ -1528,13 +1499,24 @@ function getBigKeyboard(position, rotation, onMouseDown, onMouseUp) {
 
 // ts/classes/sections/keyboard/keyboard.ts
 var Keyboard = class extends Section {
-  constructor(parent, gridParams) {
-    super(new Vector2(450, 230), {
+  constructor(parent) {
+    super({
       width: "100%",
       height: "100%",
       justifyContent: "flex-start",
       overflow: "hidden"
-    }, gridParams);
+    }, {
+      size: new Vector2(0, 230),
+      position: new Vector2(0, 370),
+      index: 0,
+      sizer: () => {
+        return {
+          size: new Vector2(parent.getState("atdesk") ? 450 : 0, 230),
+          position: new Vector2(0, 370),
+          index: 0
+        };
+      }
+    }, "keyboard");
     this.parent = parent;
     this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
       this.computer.addTT(key.toString());
@@ -1568,15 +1550,25 @@ var Keyboard = class extends Section {
       });
     }
   }
-  updateGrid(gridParams) {
-    super.updateGrid(gridParams);
-    if (Utils.isMobile()) {
-      this.dom.style.width = "450px";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "230px";
+};
+
+// ts/classes/math/util.ts
+var Utils = class {
+  static clamp(value, min, max) {
+    if (typeof value === "number" && typeof min === "number" && typeof max === "number") {
+      return Math.max(min, Math.min(value, max));
+    } else if (value instanceof Vector2 && min instanceof Vector2 && max instanceof Vector2) {
+      return new Vector2(Math.max(min.x, Math.min(value.x, max.x)), Math.max(min.y, Math.min(value.y, max.y)));
     }
+  }
+  static lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+  static isMobile() {
+    return glob.mobile;
+  }
+  static mod(n, d) {
+    return (n % d + d) % d;
   }
 };
 
@@ -1900,8 +1892,7 @@ function getDesk(position, rotation, screens = 1, style = {}) {
 }
 var Chair = class extends HTML {
   setRotation(rotation) {
-    if (this.seat.transform.rotation !== rotation) {
-    }
+    this.directionAnimation.target = rotation / 360;
   }
   setPosition(position) {
     this.transform.setPosition(position);
@@ -1909,18 +1900,27 @@ var Chair = class extends HTML {
   getPosition() {
     return this.seat.transform.absolute;
   }
+  getRotation() {
+    return this.directionAnimation.value * 360;
+  }
   constructor(position, rotation, style = {}) {
     super({
       style: __spreadValues({
         width: "80px",
-        height: "80px",
-        transition: "transform 0.8s ease-in-out"
+        height: "80px"
       }, style),
       transform: {
         position,
         rotation,
         anchor: new Vector2(0.5, 0.5),
         size: new Vector2(80, 80)
+      }
+    });
+    this.directionAnimation = glob.addAnimation({
+      duration: 300,
+      mode: "wrap",
+      onChange: (value) => {
+        this.seat.transform.setRotation(value * 360);
       }
     });
     for (let i = 0; i < 5; i++) {
@@ -1946,8 +1946,7 @@ var Chair = class extends HTML {
         height: "80px",
         backgroundColor: "#646464",
         filter: "drop-shadow(3px 4px 5px #00000040)",
-        borderRadius: "10px",
-        transition: "transform 0.8s ease-in-out, left 0.8s ease-in-out, top 0.8s ease-in-out"
+        borderRadius: "10px"
       },
       transform: {
         position: new Vector2(5, 0),
@@ -1999,6 +1998,7 @@ var Movement = class {
         this.condition = void 0;
         this.next();
       }
+      this.callback(0, new Vector2(0, 0), "waiting", this.index);
     } else {
       this.callback(0, new Vector2(0, 0), "waiting", this.index);
     }
@@ -2051,7 +2051,7 @@ var Person = class extends HTML {
     });
     this.arms = [];
     this.legs = [];
-    this._legCycle = 0;
+    this._legPosition = [1, 1];
     this._armPosition = [1, 1];
     this._armTwist = [0, 0];
     for (let i = 0; i < 2; i++) {
@@ -2137,30 +2137,81 @@ var Person = class extends HTML {
         size: new Vector2(40, 40)
       }
     }));
-    this.legCycle = 2;
-    this.armTwist = [0, 0];
+    this.animations = glob.bulkAnimations([
+      {
+        // legs
+        duration: 100,
+        onChange: (value) => {
+          let left = value;
+          this.legs[0].transform.setScale(new Vector2(1, left * 2 - 1));
+          let right = 1 - value;
+          this.legs[1].transform.setScale(new Vector2(1, right * 2 - 1));
+        }
+      },
+      {
+        // leftArm Swing
+        duration: 200,
+        onChange: (value) => {
+          let left = Utils.clamp(value, 0, 1);
+          this.arms[0].transform.setScale(new Vector2(1, left * 2 - 1));
+        }
+      },
+      {
+        // rightArm Swing
+        duration: 200,
+        onChange: (value) => {
+          let right = Utils.clamp(value, 0, 1);
+          this.arms[1].transform.setScale(new Vector2(1, right * 2 - 1));
+        }
+      },
+      {
+        // leftleg Swing
+        duration: 200,
+        onChange: (value) => {
+          let left = Utils.clamp(value, 0, 1);
+          this.legs[0].transform.setScale(new Vector2(1, left * 2 - 1));
+        }
+      },
+      {
+        // rightleg Swing
+        duration: 200,
+        onChange: (value) => {
+          let right = Utils.clamp(value, 0, 1);
+          this.legs[1].transform.setScale(new Vector2(1, right * 2 - 1));
+        }
+      }
+    ]);
+  }
+  set animationDuration(duration) {
+    this.animations.forEach((animation) => animation.duration = duration);
   }
   lookAngle(angle) {
     this.head.transform.setRotation(Utils.clamp(angle, -40, 40));
   }
-  get legCycle() {
-    return this._legCycle;
+  set legPosition([l, r]) {
+    this._legPosition = [Utils.clamp(l, 0, 1), Utils.clamp(r, 0, 1)];
+    this.animations[3].target = l;
+    this.animations[4].target = r;
   }
-  set legCycle(v) {
-    this._legCycle = v % 2;
-    const value = Ease.inOutCirc(this._legCycle <= 1 ? this._legCycle : 2 - this._legCycle);
-    this.legs[0].transform.setScale(new Vector2(1, 1 - value * 2));
-    this.legs[1].transform.setScale(new Vector2(1, -1 + value * 2));
+  set forcelegPosition([l, r]) {
+    this._legPosition = [Utils.clamp(l, 0, 1), Utils.clamp(r, 0, 1)];
+    this.animations[3].force = l;
+    this.animations[4].force = r;
+  }
+  get legPosition() {
+    return this._legPosition;
   }
   set armPosition([l, r]) {
-    this._armPosition = [Utils.clamp(l, -1, 1), Utils.clamp(r, -1, 1)];
-    this.forceArmPosition = this._armPosition;
+    this._armPosition = [Utils.clamp(l, 0, 1), Utils.clamp(r, 0, 1)];
+    this.animations[1].target = l;
+    this.animations[2].target = r;
   }
   set forceArmPosition([l, r]) {
-    let left = Utils.clamp(l, -1, 1);
-    let right = Utils.clamp(r, -1, 1);
-    this.arms[0].transform.setScale(new Vector2(1, left));
-    this.arms[1].transform.setScale(new Vector2(1, right));
+    this._armPosition = [Utils.clamp(l, 0, 1), Utils.clamp(r, 0, 1)];
+    this.animations[1].force = l;
+    this.animations[2].force = r;
+    this.animations[1].target = l;
+    this.animations[2].target = r;
   }
   get armPosition() {
     return this._armPosition;
@@ -2182,12 +2233,27 @@ var Person = class extends HTML {
 
 // ts/classes/sections/office/people/walker.ts
 var Walker = class extends HTML {
-  constructor({ initialPosition = new Vector2(0, 0), initialRotation = 0, hair = "full", walkspeed = 0.8 } = {}) {
+  get velocity() {
+    return this._velocity;
+  }
+  set velocity(value) {
+    this._velocity = value;
+  }
+  constructor({
+    initialPosition = new Vector2(0, 0),
+    initialRotation = 0,
+    hair = "full",
+    walkspeed = 0.8,
+    turnDuration = 100
+  } = {}) {
     super({
       transform: {
         position: initialPosition,
         rotation: initialRotation,
-        anchor: new Vector2(0.5, 0.5),
+        anchor: new Vector2(
+          0.5,
+          0.5
+        ),
         size: new Vector2(0, 0)
       },
       style: {
@@ -2196,58 +2262,42 @@ var Walker = class extends HTML {
       }
     });
     this.append(this.person = new Person(hair));
-    this.person.armPosition = [0, 0];
     this.walkspeed = walkspeed;
+    this.turnAnimation = glob.addAnimation({ duration: turnDuration, mode: "wrap", onChange: (value) => {
+      this.transform.setRotation(value * 360);
+    } });
+    this.turnAnimation.target = initialRotation / 360;
+    this.idle();
   }
   setDestination(destination) {
     this._destination = destination;
+    this.turnAnimation.target = this._destination.sub(this.transform.position).angle() / 360;
   }
   get destination() {
     return this._destination;
   }
-  lookAt(destination) {
-    this._lookAt = destination;
-  }
-  /**
-   * Calculate the shortest angular distance between two angles
-   * Returns a value between -180 and 180 degrees
-   */
-  getShortestAngleDifference(currentAngle, targetAngle) {
-    let diff = targetAngle - currentAngle;
-    while (diff > 180)
-      diff -= 360;
-    while (diff < -180)
-      diff += 360;
-    return diff;
-  }
   tick(obj) {
     super.tick(obj);
-    const angle = this._lookAt ? this._lookAt.sub(this.transform.position).angle() : this.transform.rotation;
     if (this._destination && this.transform.position.distance(this._destination) > 10) {
       this.move(obj, this._destination.sub(this.transform.position).normalize(), this.walkspeed);
-      this.transform.setRotation(this.transform.position.sub(this._destination).angle());
-      this.person.lookAngle(Utils.clamp(angle - this.transform.rotation, -20, 20));
     } else {
-      const angleDiff = this.getShortestAngleDifference(this.transform.rotation, angle);
-      if (angleDiff > 40) {
-        this.transform.setRotation(angle - 40);
-      } else if (angleDiff < -40) {
-        this.transform.setRotation(angle + 40);
-      }
       this.idle();
     }
   }
   idle() {
-    this.person.legCycle = 0.5;
-    this.person.armPosition = this.person.armPosition;
-    this.person.armTwist = this.person.armTwist;
+    this.legCycle = 0.25;
+    this.person.animationDuration = 50;
+    this.person.armPosition = [0.5, 0.5];
+    this.person.legPosition = [0.5, 0.5];
+    this.person.armTwist = [0, 0];
   }
   walkCycle(speed) {
-    this.person.legCycle += 0.011 * speed;
-    const rightArm = Math.cos(this.person.legCycle * Math.PI);
-    const leftArm = -rightArm;
-    this.person.forceArmPosition = [leftArm * 0.8 * speed, rightArm * 0.8 * speed];
-    this.person.forceArmTwist = [0, 0];
+    this.person.animationDuration = 200 - 50 * speed;
+    this.legCycle += 0.015 * speed;
+    const v = Math.cos(this.legCycle * Math.PI);
+    this.person.legPosition = [v < 0 ? 0 : 1, v < 0 ? 1 : 0];
+    this.person.armPosition = [v < 0 ? 1 : 0, v < 0 ? 0 : 1];
+    this.person.armTwist = [0, 0];
   }
   move(obj, direction, speed) {
     const normalisedSpeed = speed * obj.intervalS20 * 0.15;
@@ -2260,8 +2310,6 @@ var Walker = class extends HTML {
 var Boss = class extends Walker {
   constructor(game, position, rotation, hair = "full") {
     super({ initialPosition: position, initialRotation: rotation, hair, walkspeed: 0.7 });
-    this.rotation = 0;
-    this.rotationTarget = 0;
     this.waitTime = 0;
     this.waitTimeMax = 1e4;
     this.collected = 0;
@@ -2302,8 +2350,7 @@ var Boss = class extends Walker {
     ], (speed, velocity, state, phase) => {
       this.phase = phase;
       if (state === "walking") {
-        this.rotationTarget = velocity.angle();
-        this.walkCycle(speed);
+        this.turnAnimation.target = velocity.angle() / 360;
       }
       if (state === "waiting") {
         this.idle();
@@ -2314,6 +2361,7 @@ var Boss = class extends Walker {
     this.paper.transform.setScale(new Vector2(1, 0.8));
     this.person.append(this.paper);
     this.hasPaper = false;
+    this.idle();
   }
   get hasPaper() {
     return this._hasPaper;
@@ -2321,23 +2369,13 @@ var Boss = class extends Walker {
   set hasPaper(value) {
     this._hasPaper = value;
     this.paper.visible = value;
-    if (!value) {
-      this.person.armPosition = [0, 0];
-    }
   }
   tick(obj) {
-    this.movement.tick(obj);
-    if (Math.abs(this.rotation - this.rotationTarget) > 1) {
-      if (this.rotation - this.rotationTarget > 180) {
-        this.rotationTarget = this.rotationTarget + 360;
-      } else if (this.rotation - this.rotationTarget < -180) {
-        this.rotationTarget = this.rotationTarget - 360;
-      }
-      this.rotation = Utils.lerp(this.rotation, this.rotationTarget, 0.05);
-      this.transform.setRotation(this.rotation);
+    if (glob.params.boss) {
+      this.movement.tick(obj);
     }
     if (this.hasPaper) {
-      this.person.armPosition = [0.4, this.person.armPosition[1]];
+      this.person.armPosition = [0.9, this.person.armPosition[1]];
     }
   }
 };
@@ -2352,6 +2390,7 @@ var Player = class extends Walker {
       walkspeed: 1.2
     });
     this.office = office;
+    this.idle();
   }
   setDestination(destination) {
     const blockers = this.office.blockers;
@@ -2369,12 +2408,13 @@ var Sitter = class extends Walker {
   constructor(obj = {}, chair) {
     super({
       hair: obj.hair,
-      walkspeed: obj.walkspeed
+      walkspeed: obj.walkspeed,
+      turnDuration: 0
     });
     this.chair = chair;
     this._seated = false;
     this.interpolatedValue = 0;
-    this.person.armPosition = obj.armPosition || [1, 1];
+    this.person.forceArmPosition = obj.armPosition || [1, 1];
     this.data = {
       initialPosition: obj.initialPosition || new Vector2(0, 0),
       initialRotation: obj.initialRotation || 0
@@ -2385,23 +2425,15 @@ var Sitter = class extends Walker {
       this.transform.setPosition(this.data.initialPosition);
       this.transform.setRotation(this.data.initialRotation);
     }
-    this.person.legCycle = 0.5;
+    this.legCycle = 0.5;
     this.person.armTwist = [0.5, -0.5];
-    this.person.arms[0].setStyle({
-      // transition: 'transform 0.1s ease-in-out',
-    });
-    this.person.arms[1].setStyle({
-      // transition: 'transform 0.1s ease-in-out',
-    });
-    this.setStyle({
-      transition: "transform 0.8s ease-in-out"
-    });
   }
   set seated(seated) {
     this._seated = seated;
     this.visible = seated;
-    this.chair.seat.transform.setRotation(seated ? -1 : 70);
+    this.chair.setRotation(seated ? -1 : 70);
     this.chair.setPosition(seated ? new Vector2(240, 130) : new Vector2(240, 140));
+    this.person.armPosition = [seated ? 1 : 0.5, seated ? 1 : 0.5];
   }
   get seated() {
     return this._seated;
@@ -2410,28 +2442,33 @@ var Sitter = class extends Walker {
     super.tick(obj);
     if (this.chair) {
       this.interpolatedValue = this.interpolatedValue + Math.min(0.02, Number(this.seated) - this.interpolatedValue);
-      this.person.armPosition = [this.interpolatedValue, this.interpolatedValue];
-      this.person.arms[0].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
-      this.person.arms[1].dom.style.transition = this.interpolatedValue === 1 ? "transform 0.1s ease-in-out" : "none";
-      this.chair.seat.transform.setRotation(this.seated ? -1 : 70);
       this.chair.setPosition(this.seated ? new Vector2(240, 130) : new Vector2(240, 140));
       this.transform.setPosition(this.chair.seat.transform.absolute.position.add(this.data.initialPosition));
-      this.transform.setRotation(this.chair.seat.transform.absolute.rotation + this.data.initialRotation);
+      this.turnAnimation.target = (this.chair.getRotation() + this.data.initialRotation) / 360;
     }
   }
 };
 
 // ts/classes/sections/office/office.ts
 var Office = class extends Section {
-  constructor(game, gridParams) {
-    super(new Vector2(700, 600), {
+  constructor(game) {
+    super({
       backgroundColor: "#354c59",
-      width: "100%",
-      height: "600px",
       overflow: "hidden",
       display: "flex",
       justifyContent: "center"
-    }, gridParams);
+    }, {
+      size: new Vector2(700, 600),
+      position: new Vector2(0, 0),
+      index: 0,
+      sizer: () => {
+        return {
+          size: new Vector2(700, 600),
+          position: new Vector2(game.getState("atdesk") ? 470 : 0, 0),
+          index: 0
+        };
+      }
+    }, "office");
     this.game = game;
     this.mouse = false;
     this.blockers = [
@@ -2540,17 +2577,17 @@ var Office = class extends Section {
     const c = wrap.append(new Chair(new Vector2(480, 200), 120, {
       filter: "saturate(0.4)"
     }));
+    wrap.append(getPlant(new Vector2(30, 30), 0, 6, 80));
+    wrap.append(getPlant(new Vector2(590, 30), 40, 7, 50));
+    wrap.append(getCoffeeMachine(new Vector2(590, 490), 40, 9, 40));
+    wrap.append(new Sitter({ initialPosition: new Vector2(520, 240), hair: "full", initialRotation: 120, armPosition: [0, 0] }));
+    wrap.append(new Sitter({ initialPosition: new Vector2(170, 430), hair: "none", initialRotation: -90, armPosition: [1, 0] }));
     wrap.append(getDesk(new Vector2(470, 220), 90, 1, {
       filter: "saturate(0.4)"
     }));
     wrap.append(getDesk(new Vector2(-70, 360), 270, 2, {
       filter: "saturate(0.4)"
     }));
-    wrap.append(getPlant(new Vector2(30, 30), 0, 6, 80));
-    wrap.append(getPlant(new Vector2(590, 30), 40, 7, 50));
-    wrap.append(getCoffeeMachine(new Vector2(590, 490), 40, 9, 40));
-    wrap.append(new Sitter({ initialPosition: new Vector2(520, 240), hair: "full", initialRotation: 120, armPosition: [0, 0] }));
-    wrap.append(new Sitter({ initialPosition: new Vector2(170, 430), hair: "none", initialRotation: -90, armPosition: [1, 0] }));
     this.npc = new Boss(game, new Vector2(350, 700), 0, "half");
     wrap.append(this.npc);
     this.overlay = this.append(new HTML({
@@ -2574,8 +2611,6 @@ var Office = class extends Section {
     this.overlay.dom.addEventListener("pointermove", (e) => {
       if (this.mouse) {
         this.walker.setDestination(new Vector2(e.offsetX, e.offsetY));
-      } else {
-        this.walker.lookAt(new Vector2(e.offsetX, e.offsetY));
       }
     });
     this.tired = 0.15;
@@ -2614,22 +2649,12 @@ var Office = class extends Section {
       }
     }
   }
-  updateGrid(gridParams) {
-    super.updateGrid(gridParams);
-    if (Utils.isMobile()) {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "100%";
-    } else {
-      this.dom.style.width = "100%";
-      this.dom.style.height = "600px";
-    }
-  }
 };
 
-// ts/classes/sections/stat/statbar.ts
+// ts/classes/sections/statbar.ts
 var StatBar = class _StatBar extends Section {
-  constructor(parent, gridParams) {
-    super(new Vector2(700, 1), {
+  constructor(parent) {
+    super({
       display: "flex",
       flexDirection: "row",
       alignItems: "center",
@@ -2640,11 +2665,26 @@ var StatBar = class _StatBar extends Section {
       boxShadow: "none",
       overflow: "visible",
       gap: "20px",
-      pointerEvents: "none",
-      width: "100%",
-      height: "100%",
-      bottom: "20px"
-    }, gridParams);
+      pointerEvents: "none"
+    }, {
+      size: new Vector2(700, 20),
+      position: new Vector2(470, 590),
+      index: 1,
+      sizer: () => {
+        return {
+          size: new Vector2(700, 20),
+          position: new Vector2(0, 0),
+          index: 1,
+          sizer: () => {
+            return {
+              size: new Vector2(700, 20),
+              position: parent.getState("atdesk") ? new Vector2(470, 560) : new Vector2(0, 560),
+              index: 5
+            };
+          }
+        };
+      }
+    }, "statbar");
     this.parent = parent;
     this.stats = [];
     this.addStat(_StatBar.getStatBlock("person_apron", 50), 0, 0.5, () => {
@@ -2679,7 +2719,7 @@ var StatBar = class _StatBar extends Section {
         textAlign: "center",
         whiteSpace: "wrap",
         boxShadow: "inset 3px -10px 30px #0000004f, 1px -3px 7px #0000004f",
-        transition: "margin-top 0.5s ease-in-out, opacity 0.5s ease-in-out, width 0.5s 0.5s ease-in-out",
+        transition: "margin-top 0.5s ease-in-out, opacity 0.5s ease-in-out",
         position: "relative",
         overflow: "hidden",
         opacity: "0"
@@ -2707,9 +2747,7 @@ var StatBar = class _StatBar extends Section {
         stat.value = stat.getter();
         (_a = stat.setter) == null ? void 0 : _a.call(stat, stat.element, stat.value);
         stat.element.setStyle({
-          // order: index.toString(),
-          width: stat.value < stat.showOn ? "90px" : "0px",
-          transition: stat.value < stat.showOn ? "margin-top 0.5s 0.5s ease-in-out, width 0.5s ease-in-out, opacity 0.5s 0.5s ease-in-out" : "margin-top 0.5s ease-in-out, width 0.5s 0.5s ease-in-out, opacity 0.5s ease-in-out"
+          width: stat.value < stat.showOn ? "90px" : "0px"
         });
         stat.element.setStyle({
           marginTop: stat.value < stat.showOn ? "0px" : "20px",
@@ -2719,6 +2757,111 @@ var StatBar = class _StatBar extends Section {
       });
     }
     ;
+  }
+};
+
+// ts/classes/animator.ts
+var Animator = class {
+  constructor(params) {
+    this._targetValue = 0;
+    this._currentValue = 0;
+    this._momentum = 0;
+    this.params = params;
+  }
+  get value() {
+    return Utils.mod(this._currentValue, 1) * (this.params.scaleOut || 1);
+  }
+  set force(v) {
+    this._targetValue = v * (this.params.scaleIn || 1);
+    this._currentValue = v;
+    this._momentum = 0;
+  }
+  get target() {
+    return this._targetValue;
+  }
+  set target(v) {
+    this._targetValue = v * (this.params.scaleIn || 1);
+  }
+  set duration(duration) {
+    this.params.duration = duration;
+  }
+  get duration() {
+    return this.params.duration;
+  }
+  tick(obj) {
+    var _a, _b, _c, _d;
+    const lastValue = this._currentValue;
+    if (this.params.duration <= 0) {
+      this._currentValue = this._targetValue;
+      this._momentum = 0;
+      if (this._currentValue !== lastValue) {
+        (_b = (_a = this.params).onChange) == null ? void 0 : _b.call(_a, this._currentValue * (this.params.scaleOut || 1));
+      }
+      return;
+    }
+    const delta = obj.interval / 1e3;
+    const mode = this.params.mode || "linear";
+    const distanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, mode === "wrap");
+    if (Math.abs(distanceToTarget) < 1e-4) {
+      this._currentValue = this._targetValue;
+      this._momentum *= Math.pow(0.1, delta);
+      if (Math.abs(this._momentum) < 1e-4) {
+        this._momentum = 0;
+      }
+      return;
+    }
+    const absDistance = Math.abs(distanceToTarget);
+    const baseSpeed = 1 / (this.params.duration / 1e3);
+    const targetVelocity = Math.sign(distanceToTarget) * baseSpeed * absDistance;
+    const momentumSmoothing = 5;
+    const velocityDiff = targetVelocity - this._momentum;
+    this._momentum += velocityDiff * momentumSmoothing * delta;
+    const newValue = this._currentValue + this._momentum * delta;
+    if (mode === "wrap") {
+      this._currentValue = newValue;
+      while (this._currentValue > 1) {
+        this._currentValue -= 1;
+      }
+      while (this._currentValue < 0) {
+        this._currentValue += 1;
+      }
+      const newDistanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, true);
+      if (Math.sign(newDistanceToTarget) !== Math.sign(distanceToTarget) && Math.abs(newDistanceToTarget) > 1e-4) {
+        this._currentValue = this._targetValue;
+        this._momentum = 0;
+      }
+    } else {
+      if (Math.sign(distanceToTarget) > 0) {
+        this._currentValue = Math.min(newValue, this._targetValue);
+      } else {
+        this._currentValue = Math.max(newValue, this._targetValue);
+      }
+      if (Math.abs(this._currentValue - this._targetValue) < 1e-4) {
+        this._currentValue = this._targetValue;
+        this._momentum = 0;
+      }
+    }
+    if (this._currentValue !== lastValue) {
+      (_d = (_c = this.params).onChange) == null ? void 0 : _d.call(_c, this._currentValue * (this.params.scaleOut || 1));
+    }
+  }
+  getWrappedDistance(from, to, useWrapping) {
+    if (!useWrapping) {
+      return to - from;
+    }
+    const directDistance = to - from;
+    const wrapDistanceRight = 1 - from + to;
+    const wrapDistanceLeft = -(from + (1 - to));
+    const absDirectDistance = Math.abs(directDistance);
+    const absWrapRight = Math.abs(wrapDistanceRight);
+    const absWrapLeft = Math.abs(wrapDistanceLeft);
+    if (absDirectDistance <= absWrapRight && absDirectDistance <= absWrapLeft) {
+      return directDistance;
+    } else if (absWrapRight <= absWrapLeft) {
+      return wrapDistanceRight;
+    } else {
+      return wrapDistanceLeft;
+    }
   }
 };
 
@@ -2766,11 +2909,13 @@ var Timer = class {
 // ts/classes/ticker.ts
 var Ticker = class {
   constructor(game) {
+    this.animations = [];
     this._running = false;
     this.started = false;
     this.pauzedTime = 0;
     this.intervalKeeper = [];
     this.maxRate = 0;
+    this.mode = "all";
     this.callbacks = [];
     this.frameN = 0;
     document.addEventListener("visibilitychange", () => {
@@ -2779,6 +2924,11 @@ var Ticker = class {
       }
     });
     this.timer = new Timer();
+  }
+  addAnimation(params) {
+    const name = Math.random().toString(36).substring(2, 15);
+    this.animations.push(new Animator(params));
+    return this.animations[this.animations.length - 1];
   }
   get running() {
     return this._running;
@@ -2829,9 +2979,16 @@ var Ticker = class {
       };
       glob.ticker = o;
       this.timer.tick(o);
-      this.callbacks.forEach((c) => {
-        c(o);
-      });
+      if (this.mode === "all" || this.mode === "animations") {
+        this.animations.forEach((a) => {
+          a.tick(o);
+        });
+      }
+      if (this.mode === "all" || this.mode === "callbacks") {
+        this.callbacks.forEach((c) => {
+          c(o);
+        });
+      }
       this.id = window.requestAnimationFrame(this.frame.bind(this));
     }
   }
@@ -2856,29 +3013,33 @@ var glob = new class {
     this.frame = 0;
     this.mobile = false;
   }
+  addAnimation(params) {
+    return this.game.ticker.addAnimation(params);
+  }
+  bulkAnimations(params) {
+    const animations = [];
+    for (const param of params) {
+      animations.push(this.addAnimation(param));
+    }
+    return animations;
+  }
 }();
-var BusyWork3 = class extends Flex {
+var BusyWork4 = class extends HTML {
   constructor() {
     super({
-      justifyContent: "center",
-      alignItems: "center",
-      flexDirection: "column",
-      style: {
-        width: "100%",
-        height: "100%",
-        backgroundColor: "#2a3e48",
-        transition: "transform 0.6s ease-in-out"
-      },
-      classList: ["screen"]
+      classList: ["screen"],
+      transform: {
+        size: new Vector2(700, 600),
+        position: new Vector2(0, 0)
+      }
     });
     this._mobile = false;
-    this.maxSize = new Vector2(1170, 620);
     this.stateData = {};
     glob.game = this;
     this.setupDocument();
+    this.setupTicker();
     this.setupParams();
     this.setupGrid();
-    this.setupTicker();
     this.setupStates();
   }
   addState(state, initial, condition, onChange) {
@@ -2894,53 +3055,6 @@ var BusyWork3 = class extends Flex {
     var _a;
     return (_a = this.stateData[state]) == null ? void 0 : _a.value;
   }
-  updateGridSize(force = false) {
-    if (this._mobile !== Utils.isMobile() || force) {
-      this._mobile = Utils.isMobile();
-      if (this._mobile) {
-        this.debug.updateGrid([1, 1, 1, 1]);
-        this.computer.updateGrid([1, 1, 3, 1]);
-        this.keyboard.updateGrid([1, 1, 5, 1]);
-        this.office.updateGrid([1, 1, 7, 1]);
-        this.gameover.updateGrid([1, 1, 7, 1]);
-        this.coffee.updateGrid([1, 1, 11, 1]);
-        this.statBar.updateGrid([1, 1, 9, 1]);
-        this.gridManager.setColumns([700]);
-        this.gridManager.setRows([0, 350, 230, 600, 1, 600]);
-      } else {
-        this.coffee.updateGrid([5, 1, 3, 3]);
-        this.computer.updateGrid([1, 1, 3, 1]);
-        this.keyboard.updateGrid([1, 1, 5, 1]);
-        this.debug.updateGrid([1, 5, 1, 1]);
-        this.office.updateGrid([3, 1, 3, 3]);
-        this.gameover.updateGrid([3, 1, 3, 3]);
-        this.statBar.updateGrid([3, 1, 7, 1]);
-        this.gridManager.setColumns([450, 700, 450]);
-        this.gridManager.setRows([0, 350, 230, 1]);
-      }
-    }
-    if (this._mobile) {
-      this.gridManager.setColumnWidth(0, this.getState("atdesk") || this.getState("atcoffeemachine") ? 450 : 700);
-      this.gridManager.setRowHeight(1, this.getState("atdesk") ? 350 : 0);
-      this.gridManager.setRowHeight(2, this.getState("atdesk") ? 230 : 0);
-      this.gridManager.setRowHeight(3, this.getState("atdesk") || this.getState("atcoffeemachine") ? 500 : 600);
-      this.gridManager.setRowHeight(5, this.getState("atcoffeemachine") ? 600 : 0);
-      this.gridManager.updateGrid();
-      this.updateScale(this.gridManager.getSize().add(new Vector2(40, 40)));
-    } else {
-      this.gridManager.setColumnWidth(0, this.getState("atdesk") ? 450 : 0);
-      this.gridManager.setColumnWidth(1, 680);
-      this.gridManager.setColumnWidth(2, this.getState("atcoffeemachine") ? 400 : 0);
-      this.gridManager.updateGrid();
-      this.updateScale(this.gridManager.getSize().add(new Vector2(20, 80)));
-    }
-  }
-  updateScale(size = this.maxSize) {
-    const windowSize = new Vector2(window.innerWidth, window.innerHeight);
-    const xf = windowSize.x / size.x;
-    const yf = windowSize.y / size.y;
-    this.grid.transform.setScale(new Vector2(Math.min(xf, yf), Math.min(xf, yf)));
-  }
   setupDocument() {
     if (location.hostname !== "localhost") {
       const base = document.createElement("base");
@@ -2955,58 +3069,41 @@ var BusyWork3 = class extends Flex {
     };
     window.addEventListener("resize", () => {
       glob.mobile = window.innerWidth < window.innerHeight;
-      this.updateGridSize(true);
     });
   }
   setupParams() {
     const url = new URLSearchParams(location.search);
-    this.params = {
+    glob.params = {
       debug: false,
       boss: true,
       initialTired: 0
     };
     url.forEach((value, key) => {
-      if (key in this.params) {
+      if (key in glob.params) {
         const key2 = key;
-        if (typeof this.params[key2] === "boolean") {
-          this.params[key2] = Boolean(value);
+        if (typeof glob.params[key2] === "boolean") {
+          glob.params[key2] = value === "true";
         }
-        if (typeof this.params[key2] === "number") {
-          this.params[key2] = Number(value);
+        if (typeof glob.params[key2] === "number") {
+          glob.params[key2] = Number(value);
         }
       }
     });
   }
   setupGrid() {
-    this.append(this.grid = new Grid({
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 0,
-      style: {
-        width: "".concat(this.maxSize.x, "px"),
-        height: "".concat(this.maxSize.y, "px"),
-        transition: "grid-template-columns 1s cubic-bezier(0.4, 0, 0.2, 1), grid-template-rows 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1)"
-      },
-      transform: {
-        size: this.maxSize,
-        anchor: new Vector2(0.5, 0.5)
-      }
-    }), true);
-    this.grid.append(this.debug = new Debug(this, [1, 1, 1, 1]));
-    this.grid.append(this.computer = new Computer(this, [1, 1, 3, 1]));
-    this.grid.append(this.keyboard = new Keyboard(this, [1, 1, 5, 1]));
-    this.grid.append(this.office = new Office(this, [1, 1, 7, 1]), true);
-    this.grid.append(this.coffee = new Coffee(this, [1, 1, 11, 1]));
-    this.grid.append(this.gameover = new Gameover(this, [1, 1, 1, 1]));
-    this.grid.append(this.statBar = new StatBar(this, [1, 1, 9, 1]));
-    this.gridManager = new GridManager(this.grid, [450, 700, 450], [0, 350, 230, 1], 20);
+    this.append(this.computer = new Computer(this));
+    this.append(this.keyboard = new Keyboard(this));
+    this.append(this.office = new Office(this), true);
+    this.append(this.coffee = new Coffee(this));
+    this.append(this.gameover = new Gameover(this));
+    this.append(this.statBar = new StatBar(this));
     glob.debug = this.debug;
-    this.updateGridSize(true);
+    this.gridManager = new GridManager(this, [this.computer, this.keyboard, this.office, this.coffee, this.gameover, this.statBar]);
+    this.ticker.start();
   }
   setupTicker() {
     this.ticker = new Ticker(this);
     this.ticker.add(this.tick.bind(this));
-    this.ticker.start();
     glob.timer = this.ticker.timer;
   }
   setupStates() {
@@ -3017,7 +3114,6 @@ var BusyWork3 = class extends Flex {
         return this.office.walker.transform.position.distance(new Vector2(280, 165)) < 60 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(280, 165)) < 60);
       },
       (value) => {
-        this.updateGridSize();
         this.office.sitter.seated = value;
         this.office.walker.visible = !value;
         if (value) {
@@ -3027,7 +3123,6 @@ var BusyWork3 = class extends Flex {
       }
     );
     this.addState("atcoffeemachine", false, () => {
-      this.updateGridSize();
       return this.office.walker.transform.position.distance(new Vector2(650, 550)) < 200 && (!this.office.walker.destination || this.office.walker.destination.distance(new Vector2(700, 600)) < 200);
     });
     this.addState("bossinroom", false, () => {
@@ -3048,12 +3143,13 @@ var BusyWork3 = class extends Flex {
         data.onChange(data.value);
       }
     });
+    this.gridManager.tick();
     this.gameover.tick(obj);
   }
 };
 
 // ts/index.ts
 document.addEventListener("DOMContentLoaded", async () => {
-  const g = new BusyWork3();
+  const g = new BusyWork4();
 });
 //# sourceMappingURL=index.js.map

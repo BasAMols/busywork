@@ -1,5 +1,4 @@
 import { Ease } from '../../math/easings';
-import { Utils } from '../../math/util';
 import { Vector2 } from '../../math/vector2';
 import { TickerReturnData } from '../../ticker';
 import { BusyWork } from '../../tilegame';
@@ -15,13 +14,24 @@ export class Keyboard extends Section {
     get computer() {
         return this.parent.computer;
     };
-    public constructor(private parent: BusyWork, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(450, 230), {
+    public constructor(private parent: BusyWork) {
+        super({
             width: '100%',
             height: '100%',
             justifyContent: 'flex-start',
             overflow: 'hidden',
-        }, gridParams);
+        }, {
+            size: new Vector2(0, 230),
+            position: new Vector2(0, 370),
+            index: 0,
+            sizer: () => {
+                return {
+                    size: new Vector2(parent.getState('atdesk') ? 450 : 0, 230),
+                    position: new Vector2(0, 370),
+                    index: 0,
+                }
+            }
+        }, 'keyboard');
 
 
         this.append(getBigKeyboard(new Vector2(0, 0), 0, (key) => {
@@ -53,16 +63,4 @@ export class Keyboard extends Section {
         }
     }
 
-    updateGrid(gridParams: [number, number, number, number]) {
-        super.updateGrid(gridParams);
-
-        if (Utils.isMobile()) {
-            this.dom.style.width = '450px';
-            this.dom.style.height = '100%';
-        } else {
-            this.dom.style.width = '100%';
-            this.dom.style.height = '230px';
-        }
-
-    }
 }

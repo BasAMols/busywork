@@ -36,6 +36,7 @@ export class Movement {
                 this.condition = undefined;
                 this.next();
             }
+            this.callback(0, new Vector2(0, 0), 'waiting', this.index);
         } else {
             this.callback(0, new Vector2(0, 0), 'waiting', this.index);
         }

@@ -1,12 +1,10 @@
-import { Vector2 } from '../math/vector2';
 import { BusyWork } from '../tilegame';
 import { Section } from '../util/section';
 
 export class Debug extends Section {
 
-    public constructor(private parent: BusyWork, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(700, 20), {
-            transition: 'width 0.8s ease-in-out, height 0.8s ease-in-out',
+    public constructor(private parent: BusyWork, gridParams: ConstructorParameters<typeof Section>[1]) {
+        super({
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
@@ -24,8 +22,7 @@ export class Debug extends Section {
             fontFamily: 'monospace',
             fontSize: '24px',
             padding: '0 10px',
-
-        }, gridParams);
+        }, gridParams, 'debug');
     }
 
 }

@@ -1,7 +1,6 @@
 import { HTML } from '../../element/element';
 import { Flex } from '../../element/flex';
 import { Ease } from '../../math/easings';
-import { Utils } from '../../math/util';
 import { Vector2 } from '../../math/vector2';
 import { TickerReturnData } from '../../ticker';
 import { BusyWork } from '../../tilegame';
@@ -16,14 +15,25 @@ export class Computer extends Section {
     get sitter() {
         return this.parent.office.sitter
     };
-    public constructor(private parent: BusyWork, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(450, 350), {
+    public constructor(private parent: BusyWork) {
+        super({
             backgroundColor: '#90857f',
             width: '100%',
             height: '350px',
             justifyContent: 'flex-start',
             overflow: 'hidden',
-        }, gridParams);
+        }, {
+            size: new Vector2(0, 350),
+            position: new Vector2(0, 0),
+            index: 0,
+            sizer: () => {
+                return {
+                    size: new Vector2(parent.getState('atdesk') ? 450 : 0, 350),
+                    position: new Vector2(0, 0),
+                    index: 0,
+                }
+            }
+        }, 'computer');
 
 
         this.screen = this.append(new HTML({
@@ -232,18 +242,5 @@ export class Computer extends Section {
                 filter: `blur(0px)`,
             });
         }
-    }
-
-    updateGrid(gridParams: [number, number, number, number]) {
-        super.updateGrid(gridParams);
-
-        if (Utils.isMobile()) {
-            this.dom.style.width = '450px';
-            this.dom.style.height = '100%';
-        } else {
-            this.dom.style.width = '100%';
-            this.dom.style.height = '350px';
-        }
-
     }
 }

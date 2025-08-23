@@ -10,9 +10,8 @@ export class Gameover extends Section {
     text2: HTML;
     button: HTML;
 
-    public constructor(private parent: BusyWork, gridParams: ConstructorParameters<typeof Section>[2]) {
-        super(new Vector2(700, 20), {
-            transition: 'width 0.8s ease-in-out, height 0.8s ease-in-out, opacity 0.8s ease-in-out',
+    public constructor(private parent: BusyWork) {
+        super({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -27,7 +26,18 @@ export class Gameover extends Section {
             height: '100%',
             padding: '50px',
             overflow: 'hidden',
-        }, gridParams);
+        }, {
+            size: new Vector2(700, 600),
+            position: new Vector2(470, 0),
+            index: 2,
+            sizer: () => {
+                return {
+                    size:  new Vector2(700, 600),
+                    position: new Vector2(0, 0),
+                    index: parent.getState('gameover') ?2:-1,
+                };
+            },
+        }, 'gameover');
 
         this.append(this.text1 = new HTML({
             style: {
@@ -82,10 +92,9 @@ export class Gameover extends Section {
 
     public trigger() {
         this.opacity = 0.8;
-        glob.game.ticker.stop();
+        glob.game.ticker.mode = 'animations';
         this.parent.addState('atdesk', false);
         this.parent.addState('atcoffeemachine', false);
-        this.parent.updateGridSize(true);
         this.text2.setText(`${this.parent.office.npc.collected} report${this.parent.office.npc.collected === 1 ? '' : 's'} completed`);
         this.button.dom.style.pointerEvents = 'auto';
     }
