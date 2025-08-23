@@ -412,28 +412,33 @@ var GridManager = class {
     this.sections = sections;
     this.animations = glob.bulkAnimations([{
       duration: 0,
+      scale: 1e4,
       onChange: (value) => {
-        this.parent.transform.setSize(new Vector2(value * 1e4, this.parent.transform.size.y));
+        this.parent.transform.setSize(new Vector2(value, this.parent.transform.size.y));
       }
     }, {
       duration: 0,
+      scale: 1e4,
       onChange: (value) => {
-        this.parent.transform.setSize(new Vector2(this.parent.transform.size.x, value * 1e4));
+        this.parent.transform.setSize(new Vector2(this.parent.transform.size.x, value));
       }
     }, {
       duration: 350,
+      scale: 1e4,
       onChange: (value) => {
-        this.parent.transform.setPosition(new Vector2(value * 1e4, this.parent.transform.position.y));
+        this.parent.transform.setPosition(new Vector2(value, this.parent.transform.position.y));
       }
     }, {
       duration: 350,
+      scale: 1e4,
       onChange: (value) => {
-        this.parent.transform.setPosition(new Vector2(this.parent.transform.position.x, value * 1e4));
+        this.parent.transform.setPosition(new Vector2(this.parent.transform.position.x, value));
       }
     }, {
       duration: 350,
+      scale: 10,
       onChange: (value) => {
-        this.parent.transform.setScale(new Vector2(value * 10, value * 10));
+        this.parent.transform.setScale(new Vector2(value, value));
       }
     }]);
     this.tick(false);
@@ -454,11 +459,11 @@ var GridManager = class {
     const windowSize = new Vector2(window.innerWidth, window.innerHeight);
     const scale = Math.min(windowSize.x / (size.x + 60), windowSize.y / (size.y + 60));
     const position = windowSize.sub(size.scale(scale)).div(2);
-    this.animations[0][force ? "force" : "target"] = size.x / 1e4;
-    this.animations[1][force ? "force" : "target"] = size.y / 1e4;
-    this.animations[2][force ? "force" : "target"] = position.x / 1e4;
-    this.animations[3][force ? "force" : "target"] = position.y / 1e4;
-    this.animations[4][force ? "force" : "target"] = scale / 10;
+    this.animations[0][force ? "force" : "target"] = size.x;
+    this.animations[1][force ? "force" : "target"] = size.y;
+    this.animations[2][force ? "force" : "target"] = position.x;
+    this.animations[3][force ? "force" : "target"] = position.y;
+    this.animations[4][force ? "force" : "target"] = scale;
   }
 };
 
@@ -523,34 +528,38 @@ var Section = class extends HTML {
     this.name = name;
     this.dom.classList.add("section-".concat(name));
     this.animations = glob.bulkAnimations([{
+      scale: 1e3,
       duration: 350,
       onChange: (value) => {
-        this.transform.setSize(new Vector2(value * 1e3, this.transform.size.y));
+        this.transform.setSize(new Vector2(value, this.transform.size.y));
       }
     }, {
+      scale: 1e3,
       duration: 350,
       onChange: (value) => {
-        this.transform.setSize(new Vector2(this.transform.size.x, value * 1e3));
+        this.transform.setSize(new Vector2(this.transform.size.x, value));
       }
     }, {
+      scale: 1e3,
       duration: 350,
       onChange: (value) => {
-        this.transform.setPosition(new Vector2(value * 1e3, this.transform.position.y));
+        this.transform.setPosition(new Vector2(value, this.transform.position.y));
       }
     }, {
+      scale: 1e3,
       duration: 350,
       onChange: (value) => {
-        this.transform.setPosition(new Vector2(this.transform.position.x, value * 1e3));
+        this.transform.setPosition(new Vector2(this.transform.position.x, value));
       }
     }]);
   }
   updateGrid() {
     var _a, _b;
     Object.assign(this.gridData, (_b = (_a = this.gridData).sizer) == null ? void 0 : _b.call(_a));
-    this.animations[0].target = this.gridData.size.x / 1e3;
-    this.animations[1].target = this.gridData.size.y / 1e3;
-    this.animations[2].target = this.gridData.position.x / 1e3;
-    this.animations[3].target = this.gridData.position.y / 1e3;
+    this.animations[0].target = this.gridData.size.x;
+    this.animations[1].target = this.gridData.size.y;
+    this.animations[2].target = this.gridData.position.x;
+    this.animations[3].target = this.gridData.position.y;
     this.dom.style.zIndex = this.gridData.index.toString();
   }
 };
@@ -2766,13 +2775,13 @@ var Animator = class {
     this._targetValue = 0;
     this._currentValue = 0;
     this._momentum = 0;
-    this.params = params;
+    this.params = __spreadValues({ scale: 1 }, params);
   }
   get value() {
-    return Utils.mod(this._currentValue, 1) * (this.params.scaleOut || 1);
+    return this._currentValue;
   }
   set force(v) {
-    this._targetValue = v * (this.params.scaleIn || 1);
+    this._targetValue = v;
     this._currentValue = v;
     this._momentum = 0;
   }
@@ -2780,7 +2789,7 @@ var Animator = class {
     return this._targetValue;
   }
   set target(v) {
-    this._targetValue = v * (this.params.scaleIn || 1);
+    this._targetValue = v;
   }
   set duration(duration) {
     this.params.duration = duration;
@@ -2791,17 +2800,18 @@ var Animator = class {
   tick(obj) {
     var _a, _b, _c, _d;
     const lastValue = this._currentValue;
+    const scale = this.params.scale || 1;
     if (this.params.duration <= 0) {
       this._currentValue = this._targetValue;
       this._momentum = 0;
       if (this._currentValue !== lastValue) {
-        (_b = (_a = this.params).onChange) == null ? void 0 : _b.call(_a, this._currentValue * (this.params.scaleOut || 1));
+        (_b = (_a = this.params).onChange) == null ? void 0 : _b.call(_a, this._currentValue);
       }
       return;
     }
     const delta = obj.interval / 1e3;
     const mode = this.params.mode || "linear";
-    const distanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, mode === "wrap");
+    const distanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, mode === "wrap", scale);
     if (Math.abs(distanceToTarget) < 1e-4) {
       this._currentValue = this._targetValue;
       this._momentum *= Math.pow(0.1, delta);
@@ -2811,21 +2821,21 @@ var Animator = class {
       return;
     }
     const absDistance = Math.abs(distanceToTarget);
-    const baseSpeed = 1 / (this.params.duration / 1e3);
-    const targetVelocity = Math.sign(distanceToTarget) * baseSpeed * absDistance;
+    const baseSpeed = scale / (this.params.duration / 1e3);
+    const targetVelocity = Math.sign(distanceToTarget) * baseSpeed * (absDistance / scale);
     const momentumSmoothing = 5;
     const velocityDiff = targetVelocity - this._momentum;
     this._momentum += velocityDiff * momentumSmoothing * delta;
     const newValue = this._currentValue + this._momentum * delta;
     if (mode === "wrap") {
       this._currentValue = newValue;
-      while (this._currentValue > 1) {
-        this._currentValue -= 1;
+      while (this._currentValue > scale) {
+        this._currentValue -= scale;
       }
       while (this._currentValue < 0) {
-        this._currentValue += 1;
+        this._currentValue += scale;
       }
-      const newDistanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, true);
+      const newDistanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, true, scale);
       if (Math.sign(newDistanceToTarget) !== Math.sign(distanceToTarget) && Math.abs(newDistanceToTarget) > 1e-4) {
         this._currentValue = this._targetValue;
         this._momentum = 0;
@@ -2842,16 +2852,16 @@ var Animator = class {
       }
     }
     if (this._currentValue !== lastValue) {
-      (_d = (_c = this.params).onChange) == null ? void 0 : _d.call(_c, this._currentValue * (this.params.scaleOut || 1));
+      (_d = (_c = this.params).onChange) == null ? void 0 : _d.call(_c, this._currentValue);
     }
   }
-  getWrappedDistance(from, to, useWrapping) {
+  getWrappedDistance(from, to, useWrapping, scale) {
     if (!useWrapping) {
       return to - from;
     }
     const directDistance = to - from;
-    const wrapDistanceRight = 1 - from + to;
-    const wrapDistanceLeft = -(from + (1 - to));
+    const wrapDistanceRight = scale - from + to;
+    const wrapDistanceLeft = -(from + (scale - to));
     const absDirectDistance = Math.abs(directDistance);
     const absWrapRight = Math.abs(wrapDistanceRight);
     const absWrapLeft = Math.abs(wrapDistanceLeft);

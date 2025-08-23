@@ -14,28 +14,36 @@ export class GridManager {
 
         this.animations = glob.bulkAnimations([{
             duration: 0,
+            scale: 10000,
+
             onChange: (value: number) => {
-                this.parent.transform.setSize(new Vector2(value * 10000, this.parent.transform.size.y));
+                this.parent.transform.setSize(new Vector2(value, this.parent.transform.size.y));
             }
         }, {
             duration: 0,
+            scale: 10000,
+
             onChange: (value: number) => {
-                this.parent.transform.setSize(new Vector2(this.parent.transform.size.x,value * 10000));
+                this.parent.transform.setSize(new Vector2(this.parent.transform.size.x, value));
             }
         }, {
             duration: 350,
+            scale: 10000,
+
             onChange: (value: number) => {
-                this.parent.transform.setPosition(new Vector2(value * 10000, this.parent.transform.position.y));
+                this.parent.transform.setPosition(new Vector2(value, this.parent.transform.position.y));
             }
         }, {
             duration: 350,
+            scale: 10000,
             onChange: (value: number) => {
-                this.parent.transform.setPosition(new Vector2(this.parent.transform.position.x, value * 10000));
+                this.parent.transform.setPosition(new Vector2(this.parent.transform.position.x, value));
             }
         }, {
             duration: 350,
+            scale: 10,
             onChange: (value: number) => {
-                this.parent.transform.setScale(new Vector2(value * 10, value * 10));
+                this.parent.transform.setScale(new Vector2(value , value));
             }
         }]);
 
@@ -70,10 +78,10 @@ export class GridManager {
         // const scale = 1;
         const position = windowSize.sub(size.scale(scale)).div(2);
 
-        this.animations[0][force ? 'force' : 'target'] = size.x / 10000;
-        this.animations[1][force ? 'force' : 'target'] = size.y / 10000;
-        this.animations[2][force ? 'force' : 'target'] = position.x / 10000;
-        this.animations[3][force ? 'force' : 'target'] = position.y / 10000;
-        this.animations[4][force ? 'force' : 'target'] = scale / 10;
+        this.animations[0][force ? 'force' : 'target'] = size.x;
+        this.animations[1][force ? 'force' : 'target'] = size.y;
+        this.animations[2][force ? 'force' : 'target'] = position.x;
+        this.animations[3][force ? 'force' : 'target'] = position.y;
+        this.animations[4][force ? 'force' : 'target'] = scale;
     }
 }

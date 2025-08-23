@@ -1,12 +1,10 @@
-import { Utils } from './math/util';
 import { TickerReturnData } from './ticker';
 
 export interface AnimationParams {
     duration: number;
     mode?: 'linear' | 'wrap'; // Add animation mode,
     onChange?: (value: number) => void;
-    scaleOut?: number;
-    scaleIn?: number;
+    scale?: number;
 }
 
 export class Animator {
@@ -17,11 +15,11 @@ export class Animator {
     private _momentum: number = 0;
     
     get value() {
-        return Utils.mod(this._currentValue, 1) * (this.params.scaleOut || 1);
+        return this._currentValue;
     }
 
     set force(v: number) {
-        this._targetValue = v * (this.params.scaleIn || 1);
+        this._targetValue = v;
         this._currentValue = v;
         this._momentum = 0;
     }
@@ -31,7 +29,7 @@ export class Animator {
     }
 
     set target(v: number) {
-        this._targetValue = v * (this.params.scaleIn || 1);
+        this._targetValue = v;
     }
 
     set duration(duration: number) {
@@ -43,19 +41,20 @@ export class Animator {
     }
 
     public constructor(params: AnimationParams) {
-        this.params = params;
+        this.params = { scale: 1, ...params }; // Default scale to 1
     }
 
     tick(obj: TickerReturnData) {
 
         const lastValue = this._currentValue;
+        const scale = this.params.scale || 1;
 
         // Handle instant animation (duration = 0)
         if (this.params.duration <= 0) {
             this._currentValue = this._targetValue;
             this._momentum = 0;
             if (this._currentValue !== lastValue) {
-                this.params.onChange?.(this._currentValue * (this.params.scaleOut || 1));
+                this.params.onChange?.(this._currentValue);
             }
             return;
         }
@@ -64,7 +63,7 @@ export class Animator {
         const mode = this.params.mode || 'linear';
         
         // Check if we've reached target (with wrap-aware distance check)
-        const distanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, mode === 'wrap');
+        const distanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, mode === 'wrap', scale);
         if (Math.abs(distanceToTarget) < 0.0001) {
             this._currentValue = this._targetValue;
             // Gradually reduce momentum when at target
@@ -78,9 +77,9 @@ export class Animator {
         const absDistance = Math.abs(distanceToTarget);
         
         // Calculate desired velocity based on distance and duration
-        // For full distance (1.0), we want to complete in the specified duration
-        const baseSpeed = 1 / (this.params.duration / 1000); // units per second for full range
-        const targetVelocity = Math.sign(distanceToTarget) * baseSpeed * absDistance;
+        // For full scale distance, we want to complete in the specified duration
+        const baseSpeed = scale / (this.params.duration / 1000); // units per second for full range
+        const targetVelocity = Math.sign(distanceToTarget) * baseSpeed * (absDistance / scale);
         
         // Apply momentum smoothing - gradually adjust velocity toward target velocity
         const momentumSmoothing = 5.0; // Higher = faster momentum changes
@@ -95,15 +94,15 @@ export class Animator {
             this._currentValue = newValue;
             
             // Wrap around if we go outside bounds
-            while (this._currentValue > 1) {
-                this._currentValue -= 1;
+            while (this._currentValue > scale) {
+                this._currentValue -= scale;
             }
             while (this._currentValue < 0) {
-                this._currentValue += 1;
+                this._currentValue += scale;
             }
             
             // Check if we've overshot and need to clamp to target
-            const newDistanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, true);
+            const newDistanceToTarget = this.getWrappedDistance(this._currentValue, this._targetValue, true, scale);
             if (Math.sign(newDistanceToTarget) !== Math.sign(distanceToTarget) && Math.abs(newDistanceToTarget) > 0.0001) {
                 // We've overshot, clamp to target
                 this._currentValue = this._targetValue;
@@ -125,19 +124,19 @@ export class Animator {
         }
 
         if (this._currentValue !== lastValue) {
-            this.params.onChange?.(this._currentValue * (this.params.scaleOut || 1));
+            this.params.onChange?.(this._currentValue);
         }
     }
 
-    private getWrappedDistance(from: number, to: number, useWrapping: boolean): number {
+    private getWrappedDistance(from: number, to: number, useWrapping: boolean, scale: number): number {
         if (!useWrapping) {
             return to - from;
         }
         
         // Calculate all possible distances in wrap mode
         const directDistance = to - from;
-        const wrapDistanceRight = (1 - from) + to; // go up and wrap
-        const wrapDistanceLeft = -(from + (1 - to)); // go down and wrap
+        const wrapDistanceRight = (scale - from) + to; // go up and wrap
+        const wrapDistanceLeft = -(from + (scale - to)); // go down and wrap
         
         // Choose the shortest path
         const absDirectDistance = Math.abs(directDistance);
